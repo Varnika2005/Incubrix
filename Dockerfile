@@ -20,6 +20,7 @@ FROM python:3.11-slim
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app/backend:/app \
     PORT=8000
 
 # Install FFmpeg, ffprobe, and required media libraries
@@ -50,4 +51,4 @@ RUN mkdir -p storage/uploads storage/outputs storage/temp
 EXPOSE 8000
 
 # Start Uvicorn
-CMD ["sh", "-c", "uvicorn backend.app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips '*'"]

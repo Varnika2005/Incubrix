@@ -3,11 +3,22 @@ services:
     name: clippilot-ai
     runtime: docker
     dockerfilePath: Dockerfile
-    plan: free
+    plan: free # Note: Free plan disk is ephemeral. Change to starter if attaching persistent disk.
     region: oregon
+    healthCheckPath: /api/health
     autoDeploy: true
     envVars:
       - key: PORT
         value: 8000
       - key: CORS_ORIGINS
-        value: "*"
+        value: https://clippilot-ai.onrender.com,http://localhost:5173,http://127.0.0.1:5173
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PYTHONUNBUFFERED
+        value: "1"
+    # Note: On Render's Free tier, disk storage is ephemeral (SQLite and uploads reset on restart).
+    # To retain database and videos across redeploys, change plan to 'starter' and uncomment the disk configuration below:
+    # disk:
+    #   name: clippilot-storage
+    #   mountPath: /app/storage
+    #   sizeGB: 1

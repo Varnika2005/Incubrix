@@ -39,10 +39,19 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS configuration
+# CORS configuration: Disallow wildcard '*' to ensure safe credentialed authentication
+safe_cors_origins = [origin for origin in settings.CORS_ORIGINS if origin.strip() and origin.strip() != "*"]
+if not safe_cors_origins:
+    safe_cors_origins = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000"
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=safe_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -55,9 +64,13 @@ app.include_router(capabilities_router, prefix="/api", tags=["Capabilities"])
 app.include_router(jobs_router, prefix="/api", tags=["Jobs"])
 
 # Check for built frontend static assets (for Docker / Unified Cloud deployment)
-FRONTEND_DIST = BASE_DIR / "frontend" / "dist"
-STATIC_DIR = BASE_DIR / "static"
-dist_dir = FRONTEND_DIST if (FRONTEND_DIST / "index.html").exists() else (STATIC_DIR if (STATIC_DIR / "index.html").exists() else None)
+possible_dist_dirs = [
+    Path(__file__).resolve().parent.parent.parent / "frontend" / "dist",  # Repo root (Local & Docker)
+    Path(__file__).resolve().parent.parent / "frontend" / "dist",         # Inside backend/
+    Path("/app/frontend/dist"),                                           # Explicit Docker WORKDIR
+    Path(__file__).resolve().parent.parent.parent / "static",             # Repo root static/
+]
+dist_dir = next((p for p in possible_dist_dirs if (p / "index.html").exists()), None)
 
 if dist_dir:
     from fastapi.staticfiles import StaticFiles

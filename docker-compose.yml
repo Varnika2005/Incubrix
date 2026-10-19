@@ -12,7 +12,8 @@ services:
       - "8000:8000"
     environment:
       - PORT=8000
-      - CORS_ORIGINS=*
+      - CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:8000,http://127.0.0.1:8000
+      - SECRET_KEY=clippilot_production_docker_compose_secret_key_2026_xyz
     volumes:
       # Persist SQLite database and processed media outputs
       - clippilot_storage:/app/storage
