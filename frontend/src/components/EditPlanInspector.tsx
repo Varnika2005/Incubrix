@@ -24,21 +24,6 @@ interface EditPlanInspectorProps {
   hasSilenceDetections: boolean;
 }
 
-const opColorMap: Record<string, { icon: string; bg: string; border: string; shadow: string }> = {
-  trim_start:      { icon: '#A78BFA', bg: 'rgba(139,92,246,0.1)',  border: 'rgba(139,92,246,0.25)', shadow: 'rgba(139,92,246,0.08)' },
-  trim_end:        { icon: '#A78BFA', bg: 'rgba(139,92,246,0.1)',  border: 'rgba(139,92,246,0.25)', shadow: 'rgba(139,92,246,0.08)' },
-  time_slice:      { icon: '#C4B5FD', bg: 'rgba(167,139,250,0.1)', border: 'rgba(167,139,250,0.25)', shadow: 'rgba(167,139,250,0.08)' },
-  target_duration: { icon: '#C4B5FD', bg: 'rgba(167,139,250,0.1)', border: 'rgba(167,139,250,0.25)', shadow: 'rgba(167,139,250,0.08)' },
-  aspect_ratio:    { icon: '#67E8F9', bg: 'rgba(34,211,238,0.1)',  border: 'rgba(34,211,238,0.25)', shadow: 'rgba(34,211,238,0.08)' },
-  resolution:      { icon: '#67E8F9', bg: 'rgba(34,211,238,0.1)',  border: 'rgba(34,211,238,0.25)', shadow: 'rgba(34,211,238,0.08)' },
-  audio_volume:    { icon: '#6EE7B7', bg: 'rgba(52,211,153,0.1)',  border: 'rgba(52,211,153,0.25)', shadow: 'rgba(52,211,153,0.08)' },
-  color_adjust:    { icon: '#FCD34D', bg: 'rgba(251,191,36,0.1)',  border: 'rgba(251,191,36,0.25)', shadow: 'rgba(251,191,36,0.08)' },
-  silence_removal: { icon: '#F9A8D4', bg: 'rgba(236,72,153,0.1)', border: 'rgba(236,72,153,0.25)', shadow: 'rgba(236,72,153,0.08)' },
-  subtitles:       { icon: '#FDBA74', bg: 'rgba(251,146,60,0.1)', border: 'rgba(251,146,60,0.25)', shadow: 'rgba(251,146,60,0.08)' },
-};
-
-const defaultColors = { icon: '#A78BFA', bg: 'rgba(139,92,246,0.1)', border: 'rgba(139,92,246,0.25)', shadow: 'rgba(139,92,246,0.08)' };
-
 export const EditPlanInspector: React.FC<EditPlanInspectorProps> = ({
   plan,
   onPlanChange,
@@ -88,7 +73,7 @@ export const EditPlanInspector: React.FC<EditPlanInspectorProps> = ({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#F1F5F9] pb-4">
         <div>
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <span className="badge badge-indigo text-[10px]">Verified Plan</span>
             <h3 className="text-base font-bold text-[#0F172A]">Explainable Edit Plan</h3>
           </div>
@@ -143,6 +128,7 @@ export const EditPlanInspector: React.FC<EditPlanInspectorProps> = ({
                   <p className="text-xs text-[#64748B]">{op.description}</p>
                 </div>
               </div>
+            </div>
 
             {/* Interactive parameter adjustments */}
             <div className="pl-9.5 flex flex-wrap items-center gap-3 text-xs pt-2 border-t border-[#E2E8F0]">
@@ -176,18 +162,16 @@ export const EditPlanInspector: React.FC<EditPlanInspectorProps> = ({
                   <div className="flex items-center gap-1.5">
                     <span className="text-[#64748B]">End (s):</span>
                     <input
-                      type="range"
+                      type="number"
                       min="0"
                       step="0.5"
                       value={op.end_time ?? 0}
                       onChange={(e) => handleUpdateOpParam(idx, 'end_time', parseFloat(e.target.value) || 0)}
                       className="w-16 px-2 py-1 rounded-lg bg-white border border-[#CBD5E1] text-[#0F172A] text-xs font-mono font-medium outline-none focus:border-indigo-500"
                     />
-                    <span className="font-mono text-white w-12 text-right font-bold">
-                      {op.mute ? 'Mute' : `${op.volume_percent ?? 100}%`}
-                    </span>
                   </div>
-                )}
+                </div>
+              )}
 
               {op.type === 'aspect_ratio' && (
                 <div className="flex items-center gap-3">
@@ -249,8 +233,8 @@ export const EditPlanInspector: React.FC<EditPlanInspectorProps> = ({
                 </button>
               )}
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
 
       {/* Action Bar */}
@@ -258,7 +242,7 @@ export const EditPlanInspector: React.FC<EditPlanInspectorProps> = ({
         <button
           onClick={onReset}
           disabled={isProcessing}
-          className="btn btn-secondary text-xs py-2 px-4 w-full sm:w-auto"
+          className="btn btn-secondary text-xs py-2 px-3 w-full sm:w-auto"
         >
           <RotateCcw className="w-3.5 h-3.5" />
           <span>Reset Plan</span>

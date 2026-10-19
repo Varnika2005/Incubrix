@@ -57,7 +57,7 @@ export const CapabilitiesModal: React.FC<CapabilitiesModalProps> = ({
             <span>Probing system capabilities...</span>
           </div>
         ) : (
-          <div className="space-y-4 text-xs max-h-[440px] overflow-y-auto pr-1">
+          <div className="space-y-4 text-xs max-h-[420px] overflow-y-auto pr-1">
             {/* Core Engines */}
             <div className="space-y-2">
               <div className="p-3.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-start gap-3">

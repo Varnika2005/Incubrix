@@ -84,12 +84,8 @@ export const JobHistory: React.FC<JobHistoryProps> = ({
               Loading persisted jobs...
             </div>
           ) : jobs.length === 0 ? (
-            <div className="text-center py-12 flex flex-col items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] flex items-center justify-center text-[#64748B]">
-                <Film className="w-6 h-6" />
-              </div>
-              <p className="text-xs text-[#94A3B8]">No previous editing jobs found in database.</p>
-              <span className="text-[11px] text-[#64748B]">Processed videos and edit receipts will appear here.</span>
+            <div className="text-center py-12 text-xs text-[#64748B]">
+              No previous editing jobs found in database.
             </div>
           ) : (
             jobs.map((job) => {
@@ -114,24 +110,9 @@ export const JobHistory: React.FC<JobHistoryProps> = ({
                       <span className="font-bold text-[#0F172A] text-xs truncate">
                         {job.original_filename}
                       </span>
-                      {isCompleted && (
-                        <span className="badge badge-emerald text-[9px] flex items-center gap-1">
-                          <CheckCircle2 className="w-2.5 h-2.5" />
-                          completed
-                        </span>
-                      )}
-                      {isFailed && (
-                        <span className="badge badge-rose text-[9px] flex items-center gap-1">
-                          <AlertCircle className="w-2.5 h-2.5" />
-                          failed
-                        </span>
-                      )}
-                      {!isCompleted && !isFailed && (
-                        <span className="badge badge-amber text-[9px] flex items-center gap-1">
-                          <Clock className="w-2.5 h-2.5" />
-                          {job.status}
-                        </span>
-                      )}
+                      <span className={`badge badge-${statusColor} text-[9px]`}>
+                        {job.status}
+                      </span>
                     </div>
 
                     {job.prompt && (
@@ -140,12 +121,10 @@ export const JobHistory: React.FC<JobHistoryProps> = ({
                       </p>
                     )}
 
-                    <div className="flex items-center gap-3 text-[10px] text-[#64748B] mt-1.5">
+                    <div className="flex items-center gap-3 text-[10px] text-[#64748B] mt-1">
                       <span>{new Date(job.created_at).toLocaleString()}</span>
                       {job.processing_time_seconds && (
-                        <span className="text-amber-300 font-medium">
-                          • Processed in {job.processing_time_seconds.toFixed(1)}s
-                        </span>
+                        <span>• Processed in {job.processing_time_seconds.toFixed(1)}s</span>
                       )}
                     </div>
                   </div>

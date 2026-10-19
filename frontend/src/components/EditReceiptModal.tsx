@@ -48,7 +48,7 @@ export const EditReceiptModal: React.FC<EditReceiptModalProps> = ({
         </div>
 
         {/* Receipt Content */}
-        <div className="space-y-4 max-h-[440px] overflow-y-auto pr-1 text-xs">
+        <div className="space-y-4 max-h-[420px] overflow-y-auto pr-1 text-xs">
           {/* Metadata Cards */}
           <div className="grid grid-cols-2 gap-3">
             <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
@@ -72,7 +72,7 @@ export const EditReceiptModal: React.FC<EditReceiptModalProps> = ({
             <span className="text-[#64748B] block mb-2 font-bold uppercase tracking-wider text-[10px]">
               Verified Applied Operations ({receipt.applied_operations.length})
             </span>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {receipt.applied_operations.map((op, i) => (
                 <div
                   key={i}
@@ -120,7 +120,7 @@ export const EditReceiptModal: React.FC<EditReceiptModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <button onClick={onClose} className="btn btn-secondary text-xs py-2 px-3.5">
+            <button onClick={onClose} className="btn btn-secondary text-xs py-2 px-3">
               Close
             </button>
             <button
