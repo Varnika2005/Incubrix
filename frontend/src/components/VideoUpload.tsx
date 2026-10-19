@@ -32,7 +32,7 @@ export const VideoUpload: React.FC<VideoUploadProps> = ({
   };
 
   return (
-    <div className="w-full flex flex-col gap-4">
+    <div className="w-full flex flex-col gap-5 animate-fade-in-up">
       {/* Drag & Drop Zone */}
       <div
         onDragOver={(e) => {

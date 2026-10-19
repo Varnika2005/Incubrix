@@ -93,8 +93,45 @@ export const Navbar: React.FC<NavbarProps> = ({
               activeView === 'studio' ? 'btn-primary' : 'btn-ghost'
             } text-xs py-2 px-4 rounded-xl`}
           >
-            <Sparkles className="w-4 h-4" />
-            <span>Studio</span>
+            Workflow
+          </button>
+          <button
+            onClick={() => handleNavAnchor('features')}
+            className="px-3 py-1.5 rounded-lg hover:text-white hover:bg-[rgba(255,255,255,0.05)] transition-colors"
+          >
+            Capabilities
+          </button>
+          <button
+            onClick={() => handleNavAnchor('architecture')}
+            className="px-3 py-1.5 rounded-lg hover:text-white hover:bg-[rgba(255,255,255,0.05)] transition-colors"
+          >
+            Architecture
+          </button>
+          <button
+            onClick={() => handleNavAnchor('ps2-rubric')}
+            className="px-3 py-1.5 rounded-lg hover:text-white hover:bg-[rgba(255,255,255,0.05)] transition-colors flex items-center gap-1.5"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            <span>PS2 Rubric</span>
+          </button>
+          <button
+            onClick={() => handleNavAnchor('faq')}
+            className="px-3 py-1.5 rounded-lg hover:text-white hover:bg-[rgba(255,255,255,0.05)] transition-colors"
+          >
+            FAQ
+          </button>
+        </nav>
+
+        {/* Action Controls */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => onNavigate(activeView === 'studio' ? 'landing' : 'studio')}
+            className={`btn text-xs py-2 px-3.5 font-bold ${
+              activeView === 'studio' ? 'btn-primary' : 'btn-secondary'
+            }`}
+          >
+            <Wand2 className="w-4 h-4" />
+            <span>{activeView === 'studio' ? 'Overview' : 'Studio'}</span>
           </button>
 
           <button

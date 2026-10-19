@@ -25,6 +25,13 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  const accentColors: Record<string, string> = {
+    indigo: '#8B5CF6',
+    emerald: '#34D399',
+    cyan: '#22D3EE',
+    amber: '#FBBF24',
+  };
+
   return (
     <div className="card overflow-hidden flex flex-col shadow-sm">
       {/* Header bar */}
@@ -44,6 +51,13 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           controls
           playsInline
           className="w-full h-full max-h-[380px] object-contain"
+        />
+        {/* Decorative gradient overlay at bottom */}
+        <div
+          className="absolute bottom-0 left-0 right-0 h-12 pointer-events-none"
+          style={{
+            background: 'linear-gradient(transparent, rgba(0,0,0,0.4))',
+          }}
         />
       </div>
 

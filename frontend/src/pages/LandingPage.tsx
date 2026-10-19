@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Sparkles,
   ArrowRight,
@@ -24,6 +24,50 @@ interface LandingPageProps {
   onNavigateToSignup: () => void;
   isDemoLoading: boolean;
 }
+
+// Interactive Prompt Sandbox Simulation Data
+const SANDBOX_PROMPTS = [
+  {
+    title: 'Shorts Reframe + Subtitles',
+    prompt: 'Convert to 9:16 vertical shorts and burn stylized subtitles',
+    operations: [
+      { type: 'aspect_ratio', target: '9:16', desc: 'Crop 16:9 to vertical 1080x1920 with centered focus' },
+      { type: 'subtitles', engine: 'whisper_ai', desc: 'Generate timestamped SRT and burn into video frame' },
+    ],
+    ffmpeg: 'ffmpeg -i input.mp4 -vf "crop=ih*(9/16):ih,subtitles=transcription.srt" -c:a copy output.mp4',
+    benefit: 'Ready for TikTok, YouTube Shorts, and Instagram Reels in 1 pass',
+  },
+  {
+    title: 'Silence Cut + Speed Up',
+    prompt: 'Cut all silent pauses and speed up video to 1.25x',
+    operations: [
+      { type: 'silence_removal', threshold: '-30dB', desc: 'Scan audio for pauses >0.5s and produce human-reviewable cut list' },
+      { type: 'playback_speed', factor: 1.25, desc: 'Set video PTS to 0.8 and audio atempo filter to 1.25' },
+    ],
+    ffmpeg: 'ffmpeg -i input.mp4 -filter_complex "[0:v]setpts=0.8*PTS[v];[0:a]atempo=1.25[a]" -map "[v]" -map "[a]" output.mp4',
+    benefit: 'Compresses long talking-head footage into high-retention content',
+  },
+  {
+    title: 'Trim Intro + Background Mute',
+    prompt: 'Trim first 3 seconds, keep 10 seconds, and mute audio',
+    operations: [
+      { type: 'trim', start: '3.0s', end: '13.0s', desc: 'Millisecond keyframe boundary slice between 00:00:03 and 00:00:13' },
+      { type: 'audio_mute', desc: 'Strip audio stream completely for silent background loop' },
+    ],
+    ffmpeg: 'ffmpeg -ss 00:00:03 -i input.mp4 -t 10 -an -c:v libx264 output.mp4',
+    benefit: 'Clean B-roll extraction with zero background microphone noise',
+  },
+  {
+    title: 'Square Feed + Audio Boost',
+    prompt: 'Crop to 1:1 square for Instagram and boost speech volume by 1.5x',
+    operations: [
+      { type: 'aspect_ratio', target: '1:1', desc: 'Center-crop to square 1080x1080' },
+      { type: 'volume_adjustment', factor: 1.5, desc: 'Apply volume=1.5 filter with audio peak limiter' },
+    ],
+    ffmpeg: 'ffmpeg -i input.mp4 -vf "crop=min(iw\\,ih):min(iw\\,ih)" -af "volume=1.5" output.mp4',
+    benefit: 'Square social grid optimization with clear broadcast audio levels',
+  },
+];
 
 export const LandingPage: React.FC<LandingPageProps> = ({
   onStartEditing,

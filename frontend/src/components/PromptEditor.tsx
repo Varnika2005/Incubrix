@@ -66,6 +66,15 @@ export const PromptEditor: React.FC<PromptEditorProps> = ({
           disabled={!prompt.trim() || isLoading}
           className="absolute right-3 bottom-3 btn btn-primary text-xs py-2 px-3.5 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           title="Interpret prompt into an editable execution plan"
+          style={{
+            background: (!prompt.trim() || isLoading)
+              ? 'rgba(255,255,255,0.05)'
+              : 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%)',
+            color: '#fff',
+            boxShadow: (!prompt.trim() || isLoading)
+              ? 'none'
+              : '0 4px 16px rgba(139,92,246,0.35)',
+          }}
         >
           {isLoading ? (
             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

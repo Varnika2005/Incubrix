@@ -52,7 +52,7 @@ export const CreatorPresets: React.FC<CreatorPresetsProps> = ({
         <span className="font-bold uppercase tracking-wider text-[11px]">Creator Quick Presets:</span>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {presets.map((preset, idx) => (
           <button
             key={idx}

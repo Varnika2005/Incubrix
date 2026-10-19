@@ -7,6 +7,7 @@ import {
   Pause,
   Columns,
   Zap,
+  Trophy,
 } from 'lucide-react';
 
 interface ComparisonViewerProps {
@@ -63,17 +64,18 @@ export const ComparisonViewer: React.FC<ComparisonViewerProps> = ({
         <div className="flex flex-wrap items-center gap-2.5">
           <button
             onClick={togglePlaySync}
-            className="btn btn-secondary text-xs py-2 px-3"
+            className="btn btn-secondary text-xs py-2 px-3.5"
             title="Play/Pause both videos synchronously"
           >
-            {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+            {isPlaying ? <Pause className="w-3.5 h-3.5 text-amber-400" /> : <Play className="w-3.5 h-3.5 text-emerald-400" />}
             <span>{isPlaying ? 'Pause Sync' : 'Play Sync'}</span>
           </button>
 
           <button
             onClick={onOpenReceipt}
-            className="btn btn-secondary text-xs py-2 px-3"
+            className="btn btn-secondary text-xs py-2 px-3.5"
             title="View verified Edit Receipt JSON"
+            style={{ borderColor: 'rgba(139,92,246,0.2)' }}
           >
             <FileCheck className="w-3.5 h-3.5 text-indigo-600" />
             <span>Edit Receipt</span>
@@ -90,7 +92,7 @@ export const ComparisonViewer: React.FC<ComparisonViewerProps> = ({
       </div>
 
       {/* Video Viewers */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Original */}
         <div className="card overflow-hidden bg-slate-900 border-[#CBD5E1]">
           <div className="p-3 bg-slate-800/90 border-b border-slate-700 flex items-center justify-between">

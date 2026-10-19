@@ -172,7 +172,7 @@ function MainApp() {
             >
               Engine Diagnostics
             </button>
-            <span>•</span>
+            <span style={{ color: 'rgba(139,92,246,0.4)' }}>•</span>
             <button
               onClick={() => navigateTo('projects')}
               className="hover:text-indigo-600 transition-colors font-medium"
