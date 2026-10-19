@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+.pytest_cache/
+
+# Node / Frontend
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+.vite/
+frontend/.vite/
+*.log
+npm-debug.log*
+
+# Media and Large Assets
+*.mp4
+*.mov
+*.mkv
+*.webm
+*.avi
+*.wav
+*.mp3
+
+# Storage and Databases
+storage/uploads/*
+!storage/uploads/.gitkeep
+storage/outputs/*
+!storage/outputs/.gitkeep
+storage/temp/*
+!storage/temp/.gitkeep
+sample_assets/*
+!sample_assets/.gitkeep
+storage/*.db
+storage/*.db-journal
+
+# Secrets & Local Configs
+.env
+.env.local
+.DS_Store
+Thumbs.db

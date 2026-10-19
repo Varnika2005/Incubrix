@@ -1,0 +1,123 @@
+import React, { useState } from 'react';
+import { Sparkles, Wand2, ArrowRight, CornerDownLeft, AlertTriangle } from 'lucide-react';
+
+interface PromptEditorProps {
+  prompt: string;
+  onChange: (value: string) => void;
+  onAnalyze: () => void;
+  isLoading: boolean;
+  suggestedRepair?: string | null;
+  warnings?: string[];
+}
+
+export const PromptEditor: React.FC<PromptEditorProps> = ({
+  prompt,
+  onChange,
+  onAnalyze,
+  isLoading,
+  suggestedRepair,
+  warnings,
+}) => {
+  const exampleChips = [
+    'Cut first 3 seconds, convert to 9:16 vertical, and add subtitles',
+    'Keep from 0:02 to 0:08 and boost volume by 50%',
+    'Convert to 1:1 square with high contrast',
+    'Detect and remove silent pauses',
+    'Mute audio and export at 720p HD',
+  ];
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      if (prompt.trim() && !isLoading) {
+        onAnalyze();
+      }
+    }
+  };
+
+  return (
+    <div className="glass-card p-5 flex flex-col gap-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+            <Sparkles className="w-4 h-4" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-white">Prompt Video Editor</h3>
+            <p className="text-xs text-[#94A3B8]">Describe how you want your video transformed</p>
+          </div>
+        </div>
+        <span className="text-[11px] text-[#64748B] hidden sm:inline">Ctrl + Enter to parse</span>
+      </div>
+
+      {/* Textarea Input */}
+      <div className="relative">
+        <textarea
+          value={prompt}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="e.g. 'Trim the opening 2.5 seconds, crop to 9:16 portrait for TikTok, increase volume by 50%, and burn subtitles'..."
+          className="prompt-input pr-12 text-sm leading-relaxed"
+          rows={3}
+        />
+        <button
+          onClick={onAnalyze}
+          disabled={!prompt.trim() || isLoading}
+          className="absolute right-3 bottom-4 btn btn-primary text-xs py-2 px-3.5 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Interpret prompt into an editable execution plan"
+        >
+          {isLoading ? (
+            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          ) : (
+            <>
+              <span>Analyze</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* Suggested Repair or Warning Notice */}
+      {suggestedRepair && (
+        <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 flex items-start gap-3">
+          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+          <div className="text-xs">
+            <span className="font-semibold text-amber-300">Prompt Repair Suggestion:</span>
+            <p className="text-amber-200/90 mt-0.5">{suggestedRepair}</p>
+            <button
+              onClick={() => {
+                const match = suggestedRepair.match(/'([^']+)'/);
+                if (match && match[1]) {
+                  onChange(match[1]);
+                }
+              }}
+              className="mt-2 text-[11px] font-semibold text-amber-300 underline hover:text-white"
+            >
+              Apply Suggested Prompt
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Example Prompt Chips */}
+      <div>
+        <div className="flex items-center gap-1.5 mb-2 text-xs text-[#64748B]">
+          <Wand2 className="w-3 h-3 text-cyan-400" />
+          <span>Quick prompt ideas:</span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {exampleChips.map((chip, idx) => (
+            <button
+              key={idx}
+              onClick={() => onChange(chip)}
+              className="prompt-chip"
+            >
+              {chip}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
