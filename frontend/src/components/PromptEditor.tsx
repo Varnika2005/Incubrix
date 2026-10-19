@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Sparkles, Wand2, ArrowRight, CornerDownLeft, AlertTriangle } from 'lucide-react';
+import React from 'react';
+import { Sparkles, Wand2, ArrowRight, AlertTriangle } from 'lucide-react';
 
 interface PromptEditorProps {
   prompt: string;
@@ -36,19 +36,41 @@ export const PromptEditor: React.FC<PromptEditorProps> = ({
   };
 
   return (
-    <div className="glass-card p-5 flex flex-col gap-4">
+    <div
+      className="glass-card p-6 flex flex-col gap-5 animate-fade-in-up"
+      style={{
+        borderColor: 'rgba(139,92,246,0.15)',
+        background: 'linear-gradient(160deg, rgba(139,92,246,0.04) 0%, var(--bg-card) 30%), var(--bg-card)',
+      }}
+    >
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
-            <Sparkles className="w-4 h-4" />
+        <div className="flex items-center gap-3">
+          <div
+            className="w-9 h-9 rounded-xl flex items-center justify-center"
+            style={{
+              background: 'linear-gradient(135deg, rgba(139,92,246,0.2) 0%, rgba(236,72,153,0.1) 100%)',
+              border: '1.5px solid rgba(139,92,246,0.35)',
+              boxShadow: '0 0 15px rgba(139,92,246,0.12)',
+            }}
+          >
+            <Sparkles className="w-4.5 h-4.5 text-violet-400" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-white">Prompt Video Editor</h3>
-            <p className="text-xs text-[#94A3B8]">Describe how you want your video transformed</p>
+            <h3 className="text-sm font-bold text-white">Prompt Video Editor</h3>
+            <p className="text-xs text-[#64748B]">Describe how you want your video transformed</p>
           </div>
         </div>
-        <span className="text-[11px] text-[#64748B] hidden sm:inline">Ctrl + Enter to parse</span>
+        <span
+          className="text-[11px] font-medium hidden sm:inline px-2.5 py-1 rounded-lg"
+          style={{
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            color: '#64748B',
+          }}
+        >
+          Ctrl + Enter to parse
+        </span>
       </div>
 
       {/* Textarea Input */}
@@ -64,8 +86,17 @@ export const PromptEditor: React.FC<PromptEditorProps> = ({
         <button
           onClick={onAnalyze}
           disabled={!prompt.trim() || isLoading}
-          className="absolute right-3 bottom-4 btn btn-primary text-xs py-2 px-3.5 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+          className="absolute right-3 bottom-4 btn text-xs py-2 px-4 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed font-bold"
           title="Interpret prompt into an editable execution plan"
+          style={{
+            background: (!prompt.trim() || isLoading)
+              ? 'rgba(255,255,255,0.05)'
+              : 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%)',
+            color: '#fff',
+            boxShadow: (!prompt.trim() || isLoading)
+              ? 'none'
+              : '0 4px 16px rgba(139,92,246,0.35)',
+          }}
         >
           {isLoading ? (
             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -80,10 +111,16 @@ export const PromptEditor: React.FC<PromptEditorProps> = ({
 
       {/* Suggested Repair or Warning Notice */}
       {suggestedRepair && (
-        <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 flex items-start gap-3">
+        <div
+          className="p-4 rounded-2xl flex items-start gap-3 animate-fade-in-up"
+          style={{
+            background: 'linear-gradient(135deg, rgba(251,191,36,0.08) 0%, rgba(251,146,60,0.05) 100%)',
+            border: '1px solid rgba(251,191,36,0.25)',
+          }}
+        >
           <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
           <div className="text-xs">
-            <span className="font-semibold text-amber-300">Prompt Repair Suggestion:</span>
+            <span className="font-bold text-amber-300">Prompt Repair Suggestion:</span>
             <p className="text-amber-200/90 mt-0.5">{suggestedRepair}</p>
             <button
               onClick={() => {
@@ -92,7 +129,7 @@ export const PromptEditor: React.FC<PromptEditorProps> = ({
                   onChange(match[1]);
                 }
               }}
-              className="mt-2 text-[11px] font-semibold text-amber-300 underline hover:text-white"
+              className="mt-2 text-[11px] font-bold text-amber-300 underline hover:text-white transition-colors"
             >
               Apply Suggested Prompt
             </button>
@@ -102,9 +139,9 @@ export const PromptEditor: React.FC<PromptEditorProps> = ({
 
       {/* Example Prompt Chips */}
       <div>
-        <div className="flex items-center gap-1.5 mb-2 text-xs text-[#64748B]">
-          <Wand2 className="w-3 h-3 text-cyan-400" />
-          <span>Quick prompt ideas:</span>
+        <div className="flex items-center gap-2 mb-2.5 text-xs text-[#64748B]">
+          <Wand2 className="w-3.5 h-3.5 text-pink-400" />
+          <span className="font-semibold">Quick prompt ideas:</span>
         </div>
         <div className="flex flex-wrap gap-2">
           {exampleChips.map((chip, idx) => (

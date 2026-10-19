@@ -25,13 +25,31 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  const accentColors: Record<string, string> = {
+    indigo: '#8B5CF6',
+    emerald: '#34D399',
+    cyan: '#22D3EE',
+    amber: '#FBBF24',
+  };
+
   return (
-    <div className="glass-card overflow-hidden flex flex-col">
+    <div
+      className="glass-card overflow-hidden flex flex-col animate-fade-in-up"
+      style={{
+        borderColor: `${accentColors[badgeColor]}22`,
+      }}
+    >
       {/* Header bar */}
-      <div className="p-3.5 border-b border-[rgba(255,255,255,0.08)] flex items-center justify-between bg-black/20">
-        <div className="flex items-center gap-2">
-          <Film className="w-4 h-4 text-indigo-400" />
-          <span className="text-sm font-semibold text-white">{title}</span>
+      <div
+        className="p-3.5 flex items-center justify-between"
+        style={{
+          background: 'rgba(0,0,0,0.3)',
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
+        }}
+      >
+        <div className="flex items-center gap-2.5">
+          <Film className="w-4 h-4" style={{ color: accentColors[badgeColor] }} />
+          <span className="text-sm font-bold text-white">{title}</span>
         </div>
         <span className={`badge badge-${badgeColor} text-[10px]`}>{badge}</span>
       </div>
@@ -45,13 +63,26 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           playsInline
           className="w-full h-full max-h-[380px] object-contain"
         />
+        {/* Decorative gradient overlay at bottom */}
+        <div
+          className="absolute bottom-0 left-0 right-0 h-12 pointer-events-none"
+          style={{
+            background: 'linear-gradient(transparent, rgba(0,0,0,0.4))',
+          }}
+        />
       </div>
 
       {/* Metadata Pill Ribbon */}
       {metadata && (
-        <div className="p-3 border-t border-[rgba(255,255,255,0.06)] bg-[rgba(10,14,24,0.6)] flex flex-wrap gap-2 text-xs">
+        <div
+          className="p-3.5 flex flex-wrap gap-2 text-xs"
+          style={{
+            background: 'rgba(8,12,24,0.7)',
+            borderTop: '1px solid rgba(255,255,255,0.05)',
+          }}
+        >
           <div className="metadata-pill">
-            <Clock className="w-3.5 h-3.5 text-indigo-400" />
+            <Clock className="w-3.5 h-3.5 text-violet-400" />
             <span>Duration: <strong>{metadata.duration.toFixed(1)}s</strong></span>
           </div>
 

@@ -30,7 +30,7 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--bg-primary)] text-[var(--text-main)]">
+    <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg-primary)', color: 'var(--text-main)' }}>
       {/* Top Navbar */}
       <Navbar
         activeView={activeView}
@@ -74,25 +74,56 @@ export function App() {
       />
 
       {/* Global Footer */}
-      <footer className="border-t border-[rgba(255,255,255,0.06)] py-6 px-4 bg-black/30">
+      <footer
+        className="py-6 px-4 relative overflow-hidden"
+        style={{
+          background: 'rgba(5,8,16,0.8)',
+          backdropFilter: 'blur(12px)',
+          borderTop: '1px solid rgba(255,255,255,0.04)',
+        }}
+      >
+        {/* Rainbow line at top of footer */}
+        <div
+          className="absolute top-0 left-0 right-0 h-[1px]"
+          style={{
+            background: 'linear-gradient(90deg, #8B5CF6 0%, #EC4899 25%, #22D3EE 50%, #34D399 75%, #FBBF24 100%)',
+            opacity: 0.4,
+          }}
+        />
+
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#64748B]">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-white font-semibold">ClipPilot AI Engine</span>
+          <div className="flex items-center gap-2.5">
+            <span
+              className="w-2.5 h-2.5 rounded-full animate-pulse"
+              style={{
+                background: 'linear-gradient(135deg, #34D399, #22D3EE)',
+                boxShadow: '0 0 8px rgba(52,211,153,0.4)',
+              }}
+            />
+            <span
+              className="font-bold"
+              style={{
+                background: 'linear-gradient(90deg, #C4B5FD, #F9A8D4, #67E8F9)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}
+            >
+              ClipPilot AI Engine
+            </span>
             <span>• IncuBrix Selection PS2</span>
           </div>
 
           <div className="flex items-center gap-4">
             <button
               onClick={() => setIsCapabilitiesOpen(true)}
-              className="hover:text-white transition-colors"
+              className="hover:text-white transition-colors duration-200"
             >
               Engine Diagnostics
             </button>
-            <span>•</span>
+            <span style={{ color: 'rgba(139,92,246,0.4)' }}>•</span>
             <button
               onClick={() => setIsHistoryOpen(true)}
-              className="hover:text-white transition-colors"
+              className="hover:text-white transition-colors duration-200"
             >
               SQLite Audit Store
             </button>
