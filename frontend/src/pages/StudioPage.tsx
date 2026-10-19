@@ -188,14 +188,14 @@ export const StudioPage: React.FC<StudioPageProps> = ({
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex flex-col gap-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-6">
       {/* Top Banner & Reset */}
       {job && (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 bg-white border border-[#E2E8F0] rounded-xl shadow-xs">
+          <div className="flex items-center gap-2.5">
             <span className="badge badge-indigo text-xs">Active Workspace</span>
-            <span className="text-xs text-[#94A3B8]">
-              File: <strong className="text-white">{job.original_filename}</strong>
+            <span className="text-xs text-[#64748B]">
+              File: <strong className="text-[#0F172A]">{job.original_filename}</strong>
             </span>
           </div>
 
@@ -242,13 +242,13 @@ export const StudioPage: React.FC<StudioPageProps> = ({
 
               {/* Progress Bar when processing */}
               {isProcessing && (
-                <div className="glass-card p-4 flex flex-col gap-2 border-indigo-500/40">
+                <div className="card p-5 flex flex-col gap-2.5 border-indigo-200 bg-indigo-50/40">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-white flex items-center gap-2">
-                      <div className="w-3 h-3 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+                    <span className="font-bold text-[#0F172A] flex items-center gap-2">
+                      <div className="w-3.5 h-3.5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
                       <span>Transcoding Media Pipeline ({job.progress}%)</span>
                     </span>
-                    <span className="text-indigo-300 font-mono text-[11px]">{job.status}</span>
+                    <span className="text-indigo-700 font-mono text-xs font-semibold">{job.status}</span>
                   </div>
                   <div className="progress-container">
                     <div
@@ -287,11 +287,11 @@ export const StudioPage: React.FC<StudioPageProps> = ({
 
           {/* Error Banner */}
           {error && (
-            <div className="glass-card p-4 border-rose-500/40 bg-rose-500/10 flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+            <div className="p-4 rounded-xl border border-rose-200 bg-rose-50 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-semibold text-rose-300">Operation Error</p>
-                <p className="text-xs text-rose-200/80 mt-0.5">{error}</p>
+                <p className="text-sm font-bold text-rose-800">Operation Error</p>
+                <p className="text-xs text-rose-700 mt-0.5">{error}</p>
               </div>
             </div>
           )}

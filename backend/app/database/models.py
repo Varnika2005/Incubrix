@@ -1,15 +1,35 @@
 import json
 import uuid
-from datetime import datetime
-from sqlalchemy import Column, String, Integer, Float, Text, DateTime
+from datetime import datetime, timezone
+from sqlalchemy import Column, String, Integer, Float, Text, DateTime, Boolean, ForeignKey
+from sqlalchemy.orm import relationship
 from app.database.session import Base
 from app.schemas.job import JobResponse, JobStatus, MediaMetadata, SilenceSegment
 from app.schemas.edit_plan import EditPlan
+
+def utc_now():
+    return datetime.now(timezone.utc)
+
+class UserModel(Base):
+    __tablename__ = "users"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    email = Column(String(255), unique=True, index=True, nullable=False)
+    full_name = Column(String(255), nullable=False)
+    hashed_password = Column(String(255), nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
+
+    jobs = relationship("JobModel", back_populates="owner", cascade="all, delete-orphan")
 
 class JobModel(Base):
     __tablename__ = "jobs"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
+    is_demo = Column(Boolean, default=False, nullable=False)
+
     status = Column(String(32), default=JobStatus.UPLOADED.value, nullable=False)
     original_filename = Column(String(255), nullable=False)
     input_path = Column(String(512), nullable=False)
@@ -27,8 +47,10 @@ class JobModel(Base):
     error_message = Column(Text, nullable=True)
     processing_time_seconds = Column(Float, nullable=True)
     
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
+
+    owner = relationship("UserModel", back_populates="jobs")
 
     def to_response(self) -> JobResponse:
         in_meta = None
@@ -62,6 +84,8 @@ class JobModel(Base):
 
         return JobResponse(
             id=self.id,
+            user_id=self.user_id,
+            is_demo=bool(self.is_demo),
             status=JobStatus(self.status),
             original_filename=self.original_filename,
             created_at=self.created_at,

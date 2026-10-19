@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: clippilot-ai
+    runtime: docker
+    dockerfilePath: Dockerfile
+    plan: free
+    region: oregon
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: CORS_ORIGINS
+        value: "*"

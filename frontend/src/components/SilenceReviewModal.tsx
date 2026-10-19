@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { SilenceSegment } from '../types';
-import { Radio, X, Check, Scissors, AlertCircle, CheckSquare, Square } from 'lucide-react';
+import { Radio, X, Check, Scissors, CheckSquare, Square } from 'lucide-react';
 
 interface SilenceReviewModalProps {
   isOpen: boolean;
@@ -48,31 +48,31 @@ export const SilenceReviewModal: React.FC<SilenceReviewModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="glass-card w-full max-w-lg border-indigo-500/30 p-6 flex flex-col gap-5 shadow-2xl">
+    <div className="modal-overlay">
+      <div className="modal-content p-6 flex flex-col gap-5 max-w-lg">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.08)] pb-3">
+        <div className="flex items-center justify-between border-b border-[#F1F5F9] pb-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400">
+            <div className="w-8 h-8 rounded-lg bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600">
               <Radio className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white">Smart Silence Review</h3>
-              <p className="text-xs text-[#94A3B8]">Review candidate silent intervals before cutting</p>
+              <h3 className="text-sm font-bold text-[#0F172A]">Smart Silence Review</h3>
+              <p className="text-xs text-[#64748B]">Review candidate silent intervals before cutting</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-[#94A3B8] hover:text-white hover:bg-[rgba(255,255,255,0.06)]"
+            className="p-1.5 rounded-lg text-[#94A3B8] hover:text-[#0F172A] hover:bg-[#F1F5F9]"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Info banner */}
-        <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-xs text-indigo-200 flex items-center justify-between">
+        <div className="p-3 rounded-xl bg-indigo-50 border border-indigo-200 text-xs text-indigo-900 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Scissors className="w-4 h-4 text-indigo-400" />
+            <Scissors className="w-4 h-4 text-indigo-600" />
             <span>
               Total Silence Selected: <strong>{totalTimeSaved.toFixed(2)}s</strong>
             </span>
@@ -80,14 +80,14 @@ export const SilenceReviewModal: React.FC<SilenceReviewModalProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={selectAll}
-              className="text-[11px] underline hover:text-white"
+              className="text-[11px] underline font-semibold text-indigo-700 hover:text-indigo-900"
             >
               Select All
             </button>
             <span>•</span>
             <button
               onClick={deselectAll}
-              className="text-[11px] underline hover:text-white"
+              className="text-[11px] underline font-semibold text-indigo-700 hover:text-indigo-900"
             >
               Clear
             </button>
@@ -109,25 +109,25 @@ export const SilenceReviewModal: React.FC<SilenceReviewModalProps> = ({
                   onClick={() => toggleIndex(idx)}
                   className={`p-3 rounded-xl border cursor-pointer flex items-center justify-between transition-all ${
                     isSelected
-                      ? 'border-indigo-500/40 bg-indigo-500/15 text-white'
-                      : 'border-[rgba(255,255,255,0.06)] bg-black/20 text-[#94A3B8] hover:border-[rgba(255,255,255,0.12)]'
+                      ? 'border-indigo-300 bg-indigo-50/60 text-[#0F172A]'
+                      : 'border-[#E2E8F0] bg-white text-[#64748B] hover:border-[#CBD5E1]'
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     {isSelected ? (
-                      <CheckSquare className="w-4 h-4 text-indigo-400" />
+                      <CheckSquare className="w-4 h-4 text-indigo-600" />
                     ) : (
-                      <Square className="w-4 h-4 text-[#64748B]" />
+                      <Square className="w-4 h-4 text-[#94A3B8]" />
                     )}
                     <div className="text-xs">
-                      <span className="font-semibold">Pause #{idx + 1}</span>
-                      <p className="text-[11px] text-[#94A3B8]">
+                      <span className="font-bold text-[#0F172A]">Pause #{idx + 1}</span>
+                      <p className="text-[11px] text-[#64748B]">
                         From {seg.start.toFixed(2)}s to {seg.end.toFixed(2)}s
                       </p>
                     </div>
                   </div>
 
-                  <span className="badge badge-rose text-[10px]">
+                  <span className="badge badge-coral text-[10px]">
                     -{seg.duration.toFixed(2)}s
                   </span>
                 </div>
@@ -137,13 +137,13 @@ export const SilenceReviewModal: React.FC<SilenceReviewModalProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-end gap-3 pt-3 border-t border-[rgba(255,255,255,0.08)]">
+        <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#F1F5F9]">
           <button onClick={onClose} className="btn btn-secondary text-xs py-2 px-4">
             Cancel
           </button>
           <button
             onClick={handleApply}
-            className="btn btn-primary text-xs py-2 px-5 font-bold"
+            className="btn btn-primary text-xs py-2 px-5 font-bold shadow-sm"
           >
             <Check className="w-3.5 h-3.5" />
             <span>Apply Silence Cuts</span>

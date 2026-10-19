@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { JobResponse } from '../types';
 import { api } from '../services/api';
-import { History, X, Download, Trash2, ExternalLink, AlertCircle, Clock } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { History, X, Download, Trash2, Lock } from 'lucide-react';
 
 interface JobHistoryProps {
   isOpen: boolean;
@@ -14,10 +15,12 @@ export const JobHistory: React.FC<JobHistoryProps> = ({
   onClose,
   onSelectJob,
 }) => {
+  const { isAuthenticated } = useAuth();
   const [jobs, setJobs] = useState<JobResponse[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const fetchJobs = async () => {
+    if (!isAuthenticated) return;
     setIsLoading(true);
     try {
       const data = await api.listJobs();
@@ -33,7 +36,7 @@ export const JobHistory: React.FC<JobHistoryProps> = ({
     if (isOpen) {
       fetchJobs();
     }
-  }, [isOpen]);
+  }, [isOpen, isAuthenticated]);
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -48,22 +51,22 @@ export const JobHistory: React.FC<JobHistoryProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="glass-card w-full max-w-2xl border-indigo-500/30 p-6 flex flex-col gap-4 shadow-2xl">
+    <div className="modal-overlay">
+      <div className="modal-content p-6 flex flex-col gap-4 max-w-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.08)] pb-3">
+        <div className="flex items-center justify-between border-b border-[#F1F5F9] pb-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+            <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600">
               <History className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white">Persistent Job History</h3>
-              <p className="text-xs text-[#94A3B8]">Audit log of all video editing sessions in SQLite</p>
+              <h3 className="text-sm font-bold text-[#0F172A]">Persistent Job History</h3>
+              <p className="text-xs text-[#64748B]">Audit log of your video editing sessions in SQLite</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-[#94A3B8] hover:text-white hover:bg-[rgba(255,255,255,0.06)]"
+            className="p-1.5 rounded-lg text-[#94A3B8] hover:text-[#0F172A] hover:bg-[#F1F5F9]"
           >
             <X className="w-4 h-4" />
           </button>
@@ -71,8 +74,13 @@ export const JobHistory: React.FC<JobHistoryProps> = ({
 
         {/* Jobs list */}
         <div className="max-h-96 overflow-y-auto space-y-2 pr-1">
-          {isLoading ? (
-            <div className="text-center py-12 text-xs text-[#94A3B8]">
+          {!isAuthenticated ? (
+            <div className="text-center py-12 text-xs text-[#64748B] flex flex-col items-center gap-2">
+              <Lock className="w-6 h-6 text-indigo-600" />
+              <span>Please sign in to view your private job history.</span>
+            </div>
+          ) : isLoading ? (
+            <div className="text-center py-12 text-xs text-[#64748B]">
               Loading persisted jobs...
             </div>
           ) : jobs.length === 0 ? (
@@ -85,8 +93,8 @@ export const JobHistory: React.FC<JobHistoryProps> = ({
                 job.status === 'completed'
                   ? 'emerald'
                   : job.status === 'failed'
-                  ? 'rose'
-                  : 'amber';
+                  ? 'coral'
+                  : 'orange';
 
               return (
                 <div
@@ -95,11 +103,11 @@ export const JobHistory: React.FC<JobHistoryProps> = ({
                     onSelectJob(job);
                     onClose();
                   }}
-                  className="p-3.5 rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(10,14,24,0.5)] hover:border-indigo-500/40 hover:bg-[rgba(26,36,58,0.4)] cursor-pointer flex items-center justify-between gap-4 transition-all"
+                  className="p-3.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] hover:border-indigo-300 hover:bg-indigo-50/20 cursor-pointer flex items-center justify-between gap-4 transition-all"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-semibold text-white text-xs truncate">
+                      <span className="font-bold text-[#0F172A] text-xs truncate">
                         {job.original_filename}
                       </span>
                       <span className={`badge badge-${statusColor} text-[9px]`}>
@@ -108,7 +116,7 @@ export const JobHistory: React.FC<JobHistoryProps> = ({
                     </div>
 
                     {job.prompt && (
-                      <p className="text-xs text-[#94A3B8] truncate italic">
+                      <p className="text-xs text-[#475569] truncate font-mono">
                         "{job.prompt}"
                       </p>
                     )}
@@ -128,7 +136,7 @@ export const JobHistory: React.FC<JobHistoryProps> = ({
                         href={api.getDownloadUrl(job.id)}
                         onClick={(e) => e.stopPropagation()}
                         download
-                        className="btn btn-secondary text-xs p-2 text-indigo-300"
+                        className="btn btn-secondary text-xs p-2 text-indigo-600"
                         title="Download finished video"
                       >
                         <Download className="w-3.5 h-3.5" />

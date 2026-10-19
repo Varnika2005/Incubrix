@@ -64,3 +64,5 @@ class JobResponse(BaseModel):
     error_message: Optional[str] = None
     output_available: bool = False
     processing_time_seconds: Optional[float] = None
+    user_id: Optional[str] = None
+    is_demo: bool = False

@@ -74,6 +74,22 @@ export interface JobResponse {
   error_message?: string | null;
   output_available: boolean;
   processing_time_seconds?: number | null;
+  user_id?: string | null;
+  is_demo?: boolean;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  full_name: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface AuthResponse {
+  access_token: string;
+  token_type: string;
+  user: User;
 }
 
 export interface SystemCapabilities {

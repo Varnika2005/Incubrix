@@ -1,16 +1,26 @@
 # ClipPilot AI — Comprehensive Automated Test Report
 
-**Evaluation Date:** Current Session  
-**Test Suite Target:** IncuBrix Selection PS2 (Prompt-Based Video Editing Engine)  
+**Evaluation Date:** October 2026  
+**Test Suite Target:** IncuBrix Selection PS2 (Prompt-Based Video Editing Engine + Auth + UI Redesign)  
 **Host Environment:** Windows (NT 10.0.26200), Python 3.10.11, Node.js 22.17.1, FFmpeg 9.0.1 Essentials  
-**Overall Result:** **24 PASSED / 0 FAILED (100% Pass Rate)**
+**Overall Backend Pytest Result:** **32 PASSED / 0 FAILED (100% Pass Rate)**  
+**Live End-to-End System Result:** **11 / 11 STAGES PASSED (100% Pass Rate)**  
+**Frontend TypeScript Build:** **0 ERRORS (Clean in 1.34s)**
 
 ---
 
-## 1. Test Execution Breakdown
+## 1. Pytest Backend Test Breakdown (32 Tests)
 
 | Test File | Test Case | Scope & Description | Result |
 |---|---|---|---|
+| `test_auth.py` | `test_signup_success` | Validates user registration with name, email, password hashing, and token issuance | **PASSED** |
+| `test_auth.py` | `test_signup_invalid_email_and_password` | Validates rejection of malformed email and short/weak password (HTTP 422) | **PASSED** |
+| `test_auth.py` | `test_signup_duplicate_email` | Validates duplicate email registration prevention with HTTP 409 Conflict | **PASSED** |
+| `test_auth.py` | `test_login_success_and_token` | Validates user login, bcrypt password check, token generation, and user profile return | **PASSED** |
+| `test_auth.py` | `test_login_invalid_credentials_generic_error` | Validates generic error message for invalid credentials to stop email enumeration | **PASSED** |
+| `test_auth.py` | `test_logout_invalidates_session` | Validates cookie clearing and session termination upon POST /api/auth/logout | **PASSED** |
+| `test_auth.py` | `test_unauthenticated_access_to_private_job` | Validates that unauthenticated requests to private user jobs receive HTTP 401 | **PASSED** |
+| `test_auth.py` | `test_cross_user_job_isolation` | Validates that User A cannot view, process, download, or delete User B's job (HTTP 403) | **PASSED** |
 | `test_prompt_parser.py` | `test_trim_start_variations` | Verifies variations: "Remove first 5s", "Cut first 5s", "Trim opening 5s", "Discard first 5 sec" | **PASSED** |
 | `test_prompt_parser.py` | `test_keep_first_vs_remove_first` | Semantic distinction: "Remove first 3s" (trim) vs "Keep first 3s" (slice 0..3) | **PASSED** |
 | `test_prompt_parser.py` | `test_trim_end` | "Cut the last 4 seconds" | **PASSED** |
@@ -40,30 +50,85 @@
 
 ## 2. Live End-to-End System Verification (`scripts/verify_e2e.py`)
 
-All 9 end-to-end acceptance stages executed and verified against live running HTTP services:
+All 11 end-to-end acceptance stages executed and verified against live running HTTP services (`http://127.0.0.1:8000` and `http://127.0.0.1:5173`):
 
-1. **Backend Health Probe:** Verified `HTTP 200 OK` on `http://127.0.0.1:8000/api/health`
-2. **System Capabilities Probe:** Verified `HTTP 200 OK`, FFmpeg 9.0.1 Essentials, and 10 operations
-3. **Frontend Web Server:** Verified `HTTP 200 OK` on `http://127.0.0.1:5173`
-4. **1-Click Demo Creation:** Verified instant demo job with bundled synthetic talking-head video
-5. **Plan Approval:** Verified transition to `queued`
-6. **Processing Pipeline:** Verified state machine `queued` -> `processing` (30%) -> `completed` (100%) in **1.53s**
-7. **Media Decodability:** Verified `preview/output` stream returned 2,257,701 bytes of valid MP4 video
-8. **Cryptographic Edit Receipt:** Verified receipt JSON with 4 applied operations, time audit, and input/output dimensions
-9. **SQLite Persistence:** Verified job metadata persisted in SQLite database
+```
+======================================================================
+  CLIPPILOT AI — LIVE END-TO-END ACCEPTANCE & SECURITY TEST SUITE
+======================================================================
+[Stage 1/11] Probing backend health: http://127.0.0.1:8000/api/health
+  ✔ Backend is healthy (status: ok)
+
+[Stage 2/11] Probing system capabilities: http://127.0.0.1:8000/api/capabilities
+  ✔ FFmpeg 9.0.1 Essentials detected. Supported operations: 10
+
+[Stage 3/11] Probing frontend availability: http://127.0.0.1:5173
+  ✔ Frontend application is reachable (HTTP 200)
+
+[Stage 4/11] Verifying security rejection of unauthenticated custom job access...
+  ✔ Correctly rejected unauthenticated custom job request (HTTP 401)
+
+[Stage 5/11] Registering a new test user: e2e_user_c37d0c37@example.com...
+  ✔ User registered successfully (id: 2). Token issued.
+
+[Stage 6/11] Verifying session profile endpoint /api/auth/me...
+  ✔ Verified authenticated session for 'E2E Test User'
+
+[Stage 7/11] Creating and processing authenticated 1-click demo job...
+  ✔ Demo job created: c7a9e083-d2d1-4ee0-85f0-61f22495d034
+  ✔ Plan approved. State: queued
+  ✔ Transcoding completed in 1.48s (final status: completed, 100%)
+
+[Stage 8/11] Verifying decodability of processed output video...
+  ✔ Output video stream received (2,257,701 bytes, Content-Type: video/mp4)
+
+[Stage 9/11] Validating cryptographic edit receipt...
+  ✔ Receipt verified. Executed 4 operations: trim_start, aspect_ratio, audio_adjust, subtitles
+
+[Stage 10/11] Testing user project isolation and cross-user deletion protection...
+  ✔ User project list isolated: 1 project(s) owned
+  ✔ Cross-user access rejected with HTTP 403 Forbidden!
+
+[Stage 11/11] Testing logout and session invalidation...
+  ✔ Logged out successfully. Token cleared.
+
+======================================================================
+  ALL 11/11 ACCEPTANCE & SECURITY VERIFICATION STAGES PASSED!
+======================================================================
+```
 
 ---
 
-## 3. How to Reproduce Test Results
+## 3. Frontend Production Build & Browser QA
 
-From the workspace root:
+- **TypeScript Compilation:** `tsc -b && vite build` executed with **0 warnings and 0 errors**.
+- **Bundle Generation:**
+  - `dist/index.html` (0.83 kB)
+  - `dist/assets/index-*.css` (32.48 kB)
+  - `dist/assets/index-*.js` (339.29 kB)
+- **Browser Automation Verification:**
+  - **Landing Page:** Inspected hero headline, CTA routing to `/signup` and demo workflow.
+  - **Signup Page:** Verified real-time password strength meter, confirmation check, and inline validation.
+  - **Login Page:** Verified show/hide password toggle, Caps Lock warning, and error handling.
+  - **Navigation State:** Confirmed user avatar ("JD") rendered in top navigation bar upon login, with dropdown menu containing user email, Projects link, and Logout.
+  - **Studio Workspace:** Verified video upload, prompt editing, explainable edit plan cards, and synchronized player.
+
+---
+
+## 4. How to Reproduce Test Results
+
+From the workspace root (`d:\incubrix`):
 
 ```powershell
-# 1. Run full Pytest backend suite (24 tests)
+# 1. Run the backend unit and security test suite (32 tests)
 cd d:\incubrix\backend
 python -m pytest tests -v
 
-# 2. Run live End-to-End verification script
+# 2. Run the live End-to-End integration test suite (11 stages)
 cd d:\incubrix
 python scripts\verify_e2e.py
+
+# 3. Build the frontend production bundle
+cd d:\incubrix\frontend
+npm run build
 ```

@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  clippilot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: clippilot-ai:latest
+    container_name: clippilot_app
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - CORS_ORIGINS=*
+    volumes:
+      # Persist SQLite database and processed media outputs
+      - clippilot_storage:/app/storage
+
+volumes:
+  clippilot_storage:

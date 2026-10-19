@@ -11,7 +11,8 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.database.session import get_db
-from app.database.models import JobModel
+from app.database.models import JobModel, UserModel
+from app.core.deps import get_current_user, get_current_user_optional
 from app.schemas.job import (
     JobResponse,
     JobStatus,
@@ -27,6 +28,34 @@ from app.services.silence_detector import SilenceDetector
 from app.services.video_processor import VideoProcessor, VideoProcessingError
 
 router = APIRouter()
+
+def verify_job_access(
+    job: JobModel,
+    current_user: Optional[UserModel],
+    allow_demo: bool = True,
+    write_access: bool = False
+) -> None:
+    """
+    Authoritative access verification for jobs.
+    - Demo jobs are accessible publicly if allow_demo=True.
+    - Private user jobs require authentication and exact owner match.
+    """
+    if job.is_demo and allow_demo:
+        # Demo jobs are publicly readable/processable for instant onboarding
+        return
+
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required to access this project.",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+    if job.user_id and job.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access forbidden: you do not have permission to access or modify this project."
+        )
 
 def run_video_processing_task(job_id: str, input_path: str, plan: EditPlan):
     """
@@ -77,9 +106,17 @@ def run_video_processing_task(job_id: str, input_path: str, plan: EditPlan):
 @router.post("/jobs/upload", response_model=JobResponse)
 async def upload_video(
     file: UploadFile = File(...),
+    current_user: Optional[UserModel] = Depends(get_current_user_optional),
     db: Session = Depends(get_db)
 ):
-    # 1. Validate file extension
+    # 1. Path traversal security validation
+    if ".." in file.filename or "/" in file.filename or "\\" in file.filename:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid filename: path traversal sequences are not permitted."
+        )
+
+    # 2. Validate file extension
     ext = Path(file.filename).suffix.lower()
     if ext not in settings.ALLOWED_EXTENSIONS:
         raise HTTPException(
@@ -87,7 +124,15 @@ async def upload_video(
             detail=f"Unsupported format '{ext}'. Allowed: {', '.join(sorted(settings.ALLOWED_EXTENSIONS))}"
         )
 
-    # 2. Generate secure job storage location
+    # 3. Authorization check: upload requires authentication
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required. Please sign in to upload and process custom videos.",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+    # 3. Generate secure job storage location
     job_id = str(uuid.uuid4())
     job_upload_dir = settings.UPLOAD_DIR / job_id
     job_upload_dir.mkdir(parents=True, exist_ok=True)
@@ -96,7 +141,7 @@ async def upload_video(
     safe_name = f"original_{Path(file.filename).name.replace(' ', '_')}"
     destination = job_upload_dir / safe_name
 
-    # 3. Stream write file with size check
+    # 4. Stream write file with size check
     total_size = 0
     try:
         with open(destination, "wb") as buffer:
@@ -116,7 +161,7 @@ async def upload_video(
         shutil.rmtree(job_upload_dir, ignore_errors=True)
         raise HTTPException(status_code=500, detail=f"Failed to save upload: {str(e)}")
 
-    # 4. Inspect media integrity
+    # 5. Inspect media integrity
     try:
         meta = inspect_media(str(destination))
     except MediaInspectionError as e:
@@ -134,9 +179,11 @@ async def upload_video(
             detail=f"Video duration ({meta.duration:.1f}s) exceeds maximum allowed limit of {settings.MAX_VIDEO_DURATION_SECONDS}s"
         )
 
-    # 5. Persist job in database
+    # 6. Persist job in database with authoritative owner ID
     job = JobModel(
         id=job_id,
+        user_id=current_user.id,
+        is_demo=False,
         status=JobStatus.UPLOADED.value,
         original_filename=file.filename,
         input_path=str(destination),
@@ -151,14 +198,17 @@ async def upload_video(
 
 
 @router.post("/jobs/demo", response_model=JobResponse)
-def create_demo_job(db: Session = Depends(get_db)):
+def create_demo_job(
+    current_user: Optional[UserModel] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db)
+):
     """
     1-Click Reproducible Demo Endpoint.
-    Uses the bundled synthetic sample_1 asset and preconfigures prompt & plan.
+    Uses bundled synthetic sample asset, associates with current user if logged in,
+    or tags as demo for safe public evaluation.
     """
     sample_file = settings.SAMPLE_DIR / "sample_1_talking_head.mp4"
     if not sample_file.exists():
-        # Auto generate if not present
         from scripts.generate_sample_videos import generate_sample_videos
         generate_sample_videos()
 
@@ -175,6 +225,8 @@ def create_demo_job(db: Session = Depends(get_db)):
 
     job = JobModel(
         id=job_id,
+        user_id=current_user.id if current_user else None,
+        is_demo=True,
         status=JobStatus.AWAITING_APPROVAL.value,
         original_filename="sample_talking_head.mp4",
         input_path=str(destination),
@@ -195,11 +247,14 @@ def create_demo_job(db: Session = Depends(get_db)):
 def analyze_prompt(
     job_id: str,
     payload: AnalyzePromptRequest,
+    current_user: Optional[UserModel] = Depends(get_current_user_optional),
     db: Session = Depends(get_db)
 ):
     job = db.query(JobModel).filter(JobModel.id == job_id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
+
+    verify_job_access(job, current_user, allow_demo=True, write_access=True)
 
     job.status = JobStatus.ANALYZING.value
     job.prompt = payload.prompt
@@ -231,11 +286,14 @@ def process_job(
     job_id: str,
     payload: ProcessJobRequest,
     background_tasks: BackgroundTasks,
+    current_user: Optional[UserModel] = Depends(get_current_user_optional),
     db: Session = Depends(get_db)
 ):
     job = db.query(JobModel).filter(JobModel.id == job_id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
+
+    verify_job_access(job, current_user, allow_demo=True, write_access=True)
 
     if job.status == JobStatus.PROCESSING.value:
         raise HTTPException(status_code=400, detail="Job is already being processed")
@@ -259,41 +317,77 @@ def process_job(
 
 
 @router.get("/jobs/{job_id}", response_model=JobResponse)
-def get_job(job_id: str, db: Session = Depends(get_db)):
+def get_job(
+    job_id: str,
+    current_user: Optional[UserModel] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db)
+):
     job = db.query(JobModel).filter(JobModel.id == job_id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
+    
+    verify_job_access(job, current_user, allow_demo=True, write_access=False)
     return job.to_response()
 
 
 @router.get("/jobs", response_model=List[JobResponse])
-def list_jobs(db: Session = Depends(get_db)):
-    jobs = db.query(JobModel).order_by(JobModel.updated_at.desc()).limit(50).all()
+def list_jobs(
+    current_user: UserModel = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    List jobs strictly belonging to the authenticated user.
+    """
+    jobs = (
+        db.query(JobModel)
+        .filter(JobModel.user_id == current_user.id)
+        .order_by(JobModel.updated_at.desc())
+        .limit(50)
+        .all()
+    )
     return [j.to_response() for j in jobs]
 
 
 @router.get("/jobs/{job_id}/preview/original")
-def preview_original(job_id: str, db: Session = Depends(get_db)):
+def preview_original(
+    job_id: str,
+    current_user: Optional[UserModel] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db)
+):
     job = db.query(JobModel).filter(JobModel.id == job_id).first()
     if not job or not Path(job.input_path).exists():
         raise HTTPException(status_code=404, detail="Original video not found")
+    
+    verify_job_access(job, current_user, allow_demo=True, write_access=False)
     return FileResponse(job.input_path, media_type="video/mp4")
 
 
 @router.get("/jobs/{job_id}/preview/output")
-def preview_output(job_id: str, db: Session = Depends(get_db)):
+def preview_output(
+    job_id: str,
+    current_user: Optional[UserModel] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db)
+):
     job = db.query(JobModel).filter(JobModel.id == job_id).first()
     if not job or not job.output_path or not Path(job.output_path).exists():
         raise HTTPException(status_code=404, detail="Output video not ready or not found")
+    
+    verify_job_access(job, current_user, allow_demo=True, write_access=False)
     return FileResponse(job.output_path, media_type="video/mp4")
 
 
 @router.get("/jobs/{job_id}/download")
-def download_output(job_id: str, db: Session = Depends(get_db)):
+def download_output(
+    job_id: str,
+    current_user: Optional[UserModel] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db)
+):
     job = db.query(JobModel).filter(JobModel.id == job_id).first()
     if not job or not job.output_path or not Path(job.output_path).exists():
         raise HTTPException(status_code=404, detail="Output video not ready for download")
     
+    verify_job_access(job, current_user, allow_demo=True, write_access=False)
+
     download_filename = f"clippilot_{Path(job.original_filename).stem}_edited.mp4"
     return FileResponse(
         job.output_path,
@@ -303,10 +397,17 @@ def download_output(job_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/jobs/{job_id}/receipt", response_model=EditReceipt)
-def get_receipt(job_id: str, db: Session = Depends(get_db)):
+def get_receipt(
+    job_id: str,
+    current_user: Optional[UserModel] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db)
+):
     job = db.query(JobModel).filter(JobModel.id == job_id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
+    
+    verify_job_access(job, current_user, allow_demo=True, write_access=False)
+
     if job.status != JobStatus.COMPLETED.value:
         raise HTTPException(status_code=400, detail="Edit receipt is only available for completed jobs")
 
@@ -332,10 +433,20 @@ def get_receipt(job_id: str, db: Session = Depends(get_db)):
 
 
 @router.delete("/jobs/{job_id}")
-def delete_job(job_id: str, db: Session = Depends(get_db)):
+def delete_job(
+    job_id: str,
+    current_user: UserModel = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Deletes a job and its associated media files on disk.
+    Strictly restricted to the authoritative project owner.
+    """
     job = db.query(JobModel).filter(JobModel.id == job_id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
+
+    verify_job_access(job, current_user, allow_demo=False, write_access=True)
 
     # Clean up files on disk
     if job.input_path and Path(job.input_path).parent.exists():

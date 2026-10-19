@@ -26,18 +26,18 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   };
 
   return (
-    <div className="glass-card overflow-hidden flex flex-col">
+    <div className="card overflow-hidden flex flex-col shadow-sm">
       {/* Header bar */}
-      <div className="p-3.5 border-b border-[rgba(255,255,255,0.08)] flex items-center justify-between bg-black/20">
+      <div className="p-3.5 border-b border-[#F1F5F9] flex items-center justify-between bg-[#F8FAFC]">
         <div className="flex items-center gap-2">
-          <Film className="w-4 h-4 text-indigo-400" />
-          <span className="text-sm font-semibold text-white">{title}</span>
+          <Film className="w-4 h-4 text-indigo-600" />
+          <span className="text-sm font-bold text-[#0F172A] truncate max-w-sm">{title}</span>
         </div>
         <span className={`badge badge-${badgeColor} text-[10px]`}>{badge}</span>
       </div>
 
       {/* Video Container */}
-      <div className="relative bg-black flex items-center justify-center min-h-[260px] max-h-[380px] overflow-hidden">
+      <div className="relative bg-slate-950 flex items-center justify-center min-h-[260px] max-h-[380px] overflow-hidden">
         <video
           key={src}
           src={src}
@@ -49,32 +49,32 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
       {/* Metadata Pill Ribbon */}
       {metadata && (
-        <div className="p-3 border-t border-[rgba(255,255,255,0.06)] bg-[rgba(10,14,24,0.6)] flex flex-wrap gap-2 text-xs">
-          <div className="metadata-pill">
-            <Clock className="w-3.5 h-3.5 text-indigo-400" />
+        <div className="p-3 border-t border-[#F1F5F9] bg-[#F8FAFC] flex flex-wrap gap-2 text-xs">
+          <div className="badge badge-neutral text-xs py-1 px-2.5">
+            <Clock className="w-3.5 h-3.5 text-indigo-600" />
             <span>Duration: <strong>{metadata.duration.toFixed(1)}s</strong></span>
           </div>
 
-          <div className="metadata-pill">
-            <Maximize2 className="w-3.5 h-3.5 text-cyan-400" />
+          <div className="badge badge-neutral text-xs py-1 px-2.5">
+            <Maximize2 className="w-3.5 h-3.5 text-cyan-600" />
             <span>Dimensions: <strong>{metadata.width}x{metadata.height} ({metadata.aspect_ratio})</strong></span>
           </div>
 
-          <div className="metadata-pill">
-            <Zap className="w-3.5 h-3.5 text-amber-400" />
+          <div className="badge badge-neutral text-xs py-1 px-2.5">
+            <Zap className="w-3.5 h-3.5 text-amber-600" />
             <span>FPS: <strong>{metadata.fps}</strong></span>
           </div>
 
-          <div className="metadata-pill">
+          <div className="badge badge-neutral text-xs py-1 px-2.5">
             {metadata.has_audio ? (
-              <Volume2 className="w-3.5 h-3.5 text-emerald-400" />
+              <Volume2 className="w-3.5 h-3.5 text-emerald-600" />
             ) : (
-              <VolumeX className="w-3.5 h-3.5 text-rose-400" />
+              <VolumeX className="w-3.5 h-3.5 text-rose-600" />
             )}
             <span>Audio: <strong>{metadata.has_audio ? (metadata.audio_codec || 'AAC') : 'None'}</strong></span>
           </div>
 
-          <div className="metadata-pill">
+          <div className="badge badge-neutral text-xs py-1 px-2.5">
             <span>Size: <strong>{formatBytes(metadata.size_bytes)}</strong></span>
           </div>
         </div>
