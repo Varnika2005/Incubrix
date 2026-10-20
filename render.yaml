@@ -5,13 +5,13 @@ services:
     dockerfilePath: Dockerfile
     plan: free # Note: Free plan disk is ephemeral. Change to starter if attaching persistent disk.
     region: oregon
-    healthCheckPath: /api/health
+    healthCheckPath: /health
     autoDeploy: true
     envVars:
       - key: PORT
         value: 8000
       - key: CORS_ORIGINS
-        value: https://clippilot-ai.onrender.com,http://localhost:5173,http://127.0.0.1:5173
+        value: "*"
       - key: SECRET_KEY
         generateValue: true
       - key: PYTHONUNBUFFERED
