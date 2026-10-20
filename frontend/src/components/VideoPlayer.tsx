@@ -37,13 +37,13 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       </div>
 
       {/* Video Container */}
-      <div className="relative bg-slate-950 flex items-center justify-center min-h-[260px] max-h-[380px] overflow-hidden">
+      <div className="relative bg-slate-950 flex items-center justify-center aspect-video w-full max-h-[500px] overflow-hidden">
         <video
           key={src}
           src={src}
           controls
           playsInline
-          className="w-full h-full max-h-[380px] object-contain"
+          className="w-full h-full object-contain"
         />
       </div>
 

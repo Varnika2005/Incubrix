@@ -43,16 +43,31 @@ class JobModel(Base):
     detected_silence_json = Column(Text, nullable=True)
     applied_operations_json = Column(Text, nullable=True)
     
+    # Non-destructive source tracking & persistent edit history
+    original_file_hash = Column(String(64), nullable=True)
+    original_file_size = Column(Integer, nullable=True)
+    edit_history_json = Column(Text, nullable=True)
+    instruction_history_json = Column(Text, nullable=True)
+    source_integrity_verified = Column(Boolean, default=True)
+    source_integrity_status = Column(String(64), default="verified_immutable")
+    
     progress = Column(Integer, default=0)
     error_message = Column(Text, nullable=True)
     processing_time_seconds = Column(Float, nullable=True)
+
+    # IncuBrix Integration fields
+    callback_url = Column(String(512), nullable=True)
+    manifest_json = Column(Text, nullable=True)
+    s3_key = Column(String(512), nullable=True)
+    s3_url = Column(String(512), nullable=True)
+    manifest_s3_url = Column(String(512), nullable=True)
     
     created_at = Column(DateTime, default=utc_now, nullable=False)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
     owner = relationship("UserModel", back_populates="jobs")
 
-    def to_response(self) -> JobResponse:
+    def to_response(self, is_v1: bool = False) -> JobResponse:
         in_meta = None
         if self.input_metadata_json:
             try:
@@ -82,11 +97,63 @@ class JobModel(Base):
             except Exception:
                 pass
 
+        history = None
+        if self.edit_history_json:
+            try:
+                raw_hist = json.loads(self.edit_history_json)
+                if isinstance(raw_hist, dict) and "states" in raw_hist:
+                    history = raw_hist["states"]
+                elif isinstance(raw_hist, list):
+                    history = raw_hist
+            except Exception:
+                pass
+
+        timeline = None
+        if plan and plan.timeline:
+            timeline = plan.timeline
+
+        instruction_history = None
+        if self.instruction_history_json:
+            try:
+                instruction_history = json.loads(self.instruction_history_json)
+            except Exception:
+                pass
+
+        # IncuBrix standard status mapping: queued, running, succeeded, or failed
+        if self.status in (JobStatus.COMPLETED.value, "completed", "succeeded"):
+            standard_st = "succeeded"
+        elif self.status in (JobStatus.FAILED.value, "failed"):
+            standard_st = "failed"
+        elif self.status in (JobStatus.QUEUED.value, "queued"):
+            standard_st = "queued"
+        else:
+            standard_st = "running"
+
+        status_value = standard_st if is_v1 else self.status
+
+        download_url = f"/api/v1/jobs/{self.id}/download" if self.output_path else None
+        manifest_url = f"/api/v1/jobs/{self.id}/manifest" if (self.output_path or self.manifest_json) else None
+        receipt_url = f"/api/v1/jobs/{self.id}/receipt"
+        preview_url = f"/api/v1/jobs/{self.id}/preview/output" if self.output_path else None
+
+        result_payload = None
+        if self.output_path or self.status in (JobStatus.COMPLETED.value, "completed", "succeeded"):
+            result_payload = {
+                "download_url": download_url,
+                "manifest_url": manifest_url,
+                "receipt_url": receipt_url,
+                "preview_url": preview_url,
+                "s3_url": self.s3_url,
+                "manifest_s3_url": self.manifest_s3_url
+            }
+
         return JobResponse(
             id=self.id,
+            job_id=self.id,
             user_id=self.user_id,
             is_demo=bool(self.is_demo),
-            status=JobStatus(self.status),
+            status=status_value,
+            standard_status=standard_st,
             original_filename=self.original_filename,
             created_at=self.created_at,
             updated_at=self.updated_at,
@@ -97,6 +164,31 @@ class JobModel(Base):
             detected_silence=silence,
             progress=self.progress,
             error_message=self.error_message,
-            output_available=bool(self.output_path and self.status == JobStatus.COMPLETED.value),
-            processing_time_seconds=self.processing_time_seconds
+            errors=[self.error_message] if self.error_message else None,
+            output_available=bool(self.output_path and self.status in (JobStatus.COMPLETED.value, "completed", "succeeded")),
+            processing_time_seconds=self.processing_time_seconds,
+            original_file_hash=self.original_file_hash,
+            original_file_size=self.original_file_size,
+            source_integrity_verified=self.source_integrity_verified if self.source_integrity_verified is not None else True,
+            source_integrity_status=self.source_integrity_status or "verified_immutable",
+            edit_history=history,
+            timeline=timeline,
+            instruction_history=instruction_history,
+            callback_url=self.callback_url,
+            download_url=download_url,
+            manifest_url=manifest_url,
+            receipt_url=receipt_url,
+            preview_url=preview_url,
+            result=result_payload
         )
+
+class IdempotencyRecord(Base):
+    __tablename__ = "idempotency_records"
+
+    key = Column(String(128), primary_key=True)
+    request_hash = Column(String(64), nullable=False)
+    response_status = Column(Integer, nullable=False)
+    response_headers = Column(Text, nullable=True)
+    response_body = Column(Text, nullable=False)
+    job_id = Column(String(36), nullable=True)
+    created_at = Column(DateTime, default=utc_now, nullable=False)

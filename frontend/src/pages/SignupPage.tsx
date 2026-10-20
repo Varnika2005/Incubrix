@@ -27,7 +27,7 @@ export const SignupPage: React.FC<SignupPageProps> = ({
   onNavigateToDemo,
   onSuccess,
 }) => {
-  const { signup } = useAuth();
+  const { signup, isAuthenticated, user, logout } = useAuth();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -37,6 +37,46 @@ export const SignupPage: React.FC<SignupPageProps> = ({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      onSuccess();
+    }
+  }, [isAuthenticated, onSuccess]);
+
+  if (isAuthenticated && user) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 sm:p-6 lg:p-8">
+        <div className="w-full max-w-md bg-white border border-[#E2E8F0] rounded-2xl shadow-xl p-8 flex flex-col items-center text-center gap-5">
+          <div className="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-200 text-indigo-600 flex items-center justify-center font-bold text-xl shadow-sm">
+            {user.full_name ? user.full_name.substring(0, 2).toUpperCase() : 'CP'}
+          </div>
+          <div>
+            <span className="badge badge-emerald text-xs mb-2">Already Authenticated</span>
+            <h2 className="text-xl font-bold text-[#0F172A]">Signed In as {user.full_name}</h2>
+            <p className="text-xs text-[#64748B] mt-1">{user.email}</p>
+          </div>
+          <div className="w-full flex flex-col gap-2.5 pt-2">
+            <button
+              onClick={onSuccess}
+              className="btn btn-primary w-full py-3 font-bold text-sm shadow-md"
+            >
+              <span>Continue to Studio Workspace</span>
+              <ArrowRight className="w-4 h-4 ml-1" />
+            </button>
+            <button
+              onClick={async () => {
+                await logout();
+              }}
+              className="btn btn-secondary w-full py-2.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 border-[#E2E8F0]"
+            >
+              <span>Sign Out / Switch Account</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Real-time password criteria
   const passwordCriteria = useMemo(() => {

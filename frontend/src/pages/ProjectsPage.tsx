@@ -121,7 +121,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
   }
 
   return (
-    <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 flex flex-col gap-8">
+    <div className="w-full max-w-[1920px] mx-auto py-8 px-4 sm:px-6 lg:px-10 flex flex-col gap-8">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[#E2E8F0] pb-6">
         <div>
@@ -261,15 +261,18 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                         <FileText className="w-3.5 h-3.5" />
                       </button>
 
-                      <a
-                        href={api.getDownloadUrl(job.id)}
-                        onClick={(e) => e.stopPropagation()}
-                        download
-                        className="p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-600"
-                        title="Download Finished Video"
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const baseName = job.original_filename ? job.original_filename.replace(/\.[^/.]+$/, '') : job.id.slice(0, 8);
+                          api.downloadVideo(job.id, `clippilot_${baseName}_edited.mp4`);
+                        }}
+                        className="p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-600 transition-colors"
+                        title="Download Finished Video (MP4)"
                       >
                         <Download className="w-3.5 h-3.5" />
-                      </a>
+                      </button>
                     </>
                   )}
 

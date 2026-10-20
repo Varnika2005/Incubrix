@@ -2,7 +2,7 @@ import json
 import math
 import subprocess
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, Any
 from app.services.ffmpeg_finder import FFmpegFinder
 from app.schemas.job import MediaMetadata
 
@@ -124,3 +124,67 @@ def inspect_media(file_path: str) -> MediaMetadata:
         size_bytes=size_bytes,
         format_name=format_name
     )
+
+
+def inspect_av_sync(file_path: str) -> Dict[str, Any]:
+    """
+    Detailed FFprobe inspection measuring:
+    - video stream duration and start_time
+    - audio stream duration and start_time
+    - format duration
+    - frame rate and frame count
+    - audio-to-video skew in seconds and video frames
+    - boolean flag confirming alignment within one frame
+    """
+    path = Path(file_path)
+    if not path.is_file():
+        raise MediaInspectionError(f"File not found: {file_path}")
+
+    ffprobe_bin = FFmpegFinder.get_ffprobe_path()
+    cmd = [
+        ffprobe_bin,
+        "-v", "error",
+        "-show_entries", "format=duration",
+        "-show_entries", "stream=index,codec_type,duration,start_time,nb_frames,r_frame_rate",
+        "-of", "json",
+        str(path)
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
+    if result.returncode != 0:
+        raise MediaInspectionError(f"FFprobe failed: {result.stderr}")
+    data = json.loads(result.stdout)
+    format_dur = float(data.get("format", {}).get("duration", 0.0))
+    streams = data.get("streams", [])
+    v_stream = next((s for s in streams if s.get("codec_type") == "video"), None)
+    a_stream = next((s for s in streams if s.get("codec_type") == "audio"), None)
+
+    v_dur = float(v_stream.get("duration", format_dur)) if v_stream else 0.0
+    v_start = float(v_stream.get("start_time", 0.0)) if v_stream else 0.0
+    v_frames = int(v_stream.get("nb_frames") or 0) if v_stream else 0
+    fps = parse_frame_rate(v_stream.get("r_frame_rate", "30/1")) if v_stream else 30.0
+    if fps <= 0:
+        fps = 30.0
+    frame_dur = 1.0 / fps
+
+    a_dur = float(a_stream.get("duration", format_dur)) if a_stream else None
+    a_start = float(a_stream.get("start_time", 0.0)) if a_stream else None
+
+    # Calculate skew
+    av_skew = abs(v_dur - a_dur) if a_dur is not None else 0.0
+    skew_frames = av_skew / frame_dur if a_dur is not None else 0.0
+
+    return {
+        "file_path": str(path),
+        "format_duration": format_dur,
+        "video_duration": v_dur,
+        "video_start_time": v_start,
+        "video_frames": v_frames,
+        "fps": fps,
+        "frame_duration": frame_dur,
+        "has_audio": a_stream is not None,
+        "audio_duration": a_dur,
+        "audio_start_time": a_start,
+        "av_skew_seconds": round(av_skew, 6),
+        "av_skew_frames": round(skew_frames, 4),
+        "is_aligned_within_one_frame": skew_frames <= 1.0
+    }

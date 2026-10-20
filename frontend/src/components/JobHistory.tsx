@@ -132,15 +132,18 @@ export const JobHistory: React.FC<JobHistoryProps> = ({
                   {/* Actions */}
                   <div className="flex items-center gap-1.5 shrink-0">
                     {job.output_available && (
-                      <a
-                        href={api.getDownloadUrl(job.id)}
-                        onClick={(e) => e.stopPropagation()}
-                        download
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const baseName = job.original_filename ? job.original_filename.replace(/\.[^/.]+$/, '') : job.id.slice(0, 8);
+                          api.downloadVideo(job.id, `clippilot_${baseName}_edited.mp4`);
+                        }}
                         className="btn btn-secondary text-xs p-2 text-indigo-600"
-                        title="Download finished video"
+                        title="Download finished video (MP4)"
                       >
                         <Download className="w-3.5 h-3.5" />
-                      </a>
+                      </button>
                     )}
 
                     <button

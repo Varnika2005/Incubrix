@@ -51,10 +51,15 @@ def extract_token_from_request(
     auth_header: Optional[HTTPAuthorizationCredentials] = Depends(security_bearer)
 ) -> Optional[str]:
     """
-    Extracts JWT from Authorization header Bearer token, or from clippilot_token cookie.
+    Extracts JWT from Authorization header Bearer token, or from clippilot_token cookie,
+    or from token query parameter (vital for direct downloads and media streaming).
     """
     if auth_header and auth_header.credentials:
         return auth_header.credentials
+    # Fallback to query parameter (e.g. ?token=...)
+    query_token = request.query_params.get("token")
+    if query_token:
+        return query_token
     # Fallback to cookie
     cookie_token = request.cookies.get("clippilot_token")
     if cookie_token:

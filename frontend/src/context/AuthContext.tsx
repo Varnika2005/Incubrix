@@ -48,14 +48,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const login = async (data: { email: string; password: string; remember_me?: boolean }) => {
-    setIsLoading(true);
-    try {
-      const authRes = await api.login(data);
-      setUser(authRes.user);
-      setToken(authRes.access_token);
-    } finally {
-      setIsLoading(false);
-    }
+    const authRes = await api.login(data);
+    setUser(authRes.user);
+    setToken(authRes.access_token);
+    return;
   };
 
   const signup = async (data: {
@@ -64,25 +60,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     password: string;
     confirm_password: string;
   }) => {
-    setIsLoading(true);
-    try {
-      const authRes = await api.signup(data);
-      setUser(authRes.user);
-      setToken(authRes.access_token);
-    } finally {
-      setIsLoading(false);
-    }
+    const authRes = await api.signup(data);
+    setUser(authRes.user);
+    setToken(authRes.access_token);
+    return;
   };
 
   const logout = async () => {
-    setIsLoading(true);
     try {
       await api.logout();
     } finally {
       setUser(null);
       setToken(null);
       setStoredAuthToken(null);
-      setIsLoading(false);
     }
   };
 

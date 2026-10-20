@@ -16,18 +16,47 @@ function MainApp() {
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [activeView, setActiveView] = useState<AppView>('landing');
   const [selectedJob, setSelectedJob] = useState<JobResponse | null>(null);
+  const [studioKey, setStudioKey] = useState(0);
   const [redirectTarget, setRedirectTarget] = useState<AppView | null>(null);
 
   // Modals & Demo states
   const [isCapabilitiesOpen, setIsCapabilitiesOpen] = useState(false);
   const [isDemoLoading, setIsDemoLoading] = useState(false);
 
+  // Restore active project from localStorage on initial load
+  useEffect(() => {
+    const savedJobId = localStorage.getItem('clippilot_active_job_id');
+    if (savedJobId && !selectedJob) {
+      api.getJob(savedJobId)
+        .then((job) => {
+          setSelectedJob(job);
+        })
+        .catch(() => {
+          localStorage.removeItem('clippilot_active_job_id');
+        });
+    }
+  }, []);
+
+  const handleSelectJob = (job: JobResponse | null) => {
+    setSelectedJob(job);
+    if (job) {
+      localStorage.setItem('clippilot_active_job_id', job.id);
+    } else {
+      localStorage.removeItem('clippilot_active_job_id');
+    }
+  };
+
   // Hash-based routing synchronization
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '').replace('/', '');
       if (['landing', 'studio', 'projects', 'login', 'signup'].includes(hash)) {
-        setActiveView(hash as AppView);
+        if (isAuthenticated && (hash === 'login' || hash === 'signup')) {
+          setActiveView('studio');
+          window.location.hash = '#studio';
+        } else {
+          setActiveView(hash as AppView);
+        }
       } else if (!hash) {
         setActiveView('landing');
       }
@@ -36,10 +65,25 @@ function MainApp() {
     handleHashChange();
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
+  }, [isAuthenticated]);
+
+  // If user becomes authenticated while on login or signup view, immediately route them to studio
+  useEffect(() => {
+    if (isAuthenticated && (activeView === 'login' || activeView === 'signup')) {
+      const target = redirectTarget || 'studio';
+      setRedirectTarget(null);
+      navigateTo(target);
+    }
+  }, [isAuthenticated, activeView]);
 
   // Update hash when activeView changes
   const navigateTo = (view: AppView) => {
+    // If already authenticated and trying to go to login or signup, redirect to studio
+    if (isAuthenticated && (view === 'login' || view === 'signup')) {
+      window.location.hash = '#studio';
+      return;
+    }
+
     // Route guard: if trying to open projects while unauthenticated
     if (view === 'projects' && !isAuthenticated) {
       setRedirectTarget('projects');
@@ -47,8 +91,9 @@ function MainApp() {
       return;
     }
 
-    // If trying to open studio without an active demo and unauthenticated
-    if (view === 'studio' && !isAuthenticated && !selectedJob) {
+    // If trying to open studio without an active demo/project and unauthenticated
+    const hasSavedJob = Boolean(localStorage.getItem('clippilot_active_job_id'));
+    if (view === 'studio' && !isAuthenticated && !selectedJob && !hasSavedJob) {
       setRedirectTarget('studio');
       window.location.hash = '#login';
       return;
@@ -67,7 +112,8 @@ function MainApp() {
     setIsDemoLoading(true);
     try {
       const demoJob = await api.createDemoJob();
-      setSelectedJob(demoJob);
+      handleSelectJob(demoJob);
+      setStudioKey(prev => prev + 1);
       navigateTo('studio');
     } catch (err) {
       console.error('Failed to trigger demo', err);
@@ -77,8 +123,19 @@ function MainApp() {
   };
 
   const handleNewProject = () => {
-    setSelectedJob(null);
-    navigateTo('studio');
+    if (!isAuthenticated) {
+      setRedirectTarget('studio');
+      navigateTo('login');
+      return;
+    }
+    handleSelectJob(null);
+    setStudioKey(prev => prev + 1);
+    if (activeView !== 'studio') {
+      navigateTo('studio');
+    } else {
+      window.location.hash = '#studio';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   if (isAuthLoading) {
@@ -108,7 +165,7 @@ function MainApp() {
       <main className="flex-1">
         {activeView === 'landing' && (
           <LandingPage
-            onStartEditing={() => navigateTo('studio')}
+            onStartEditing={handleNewProject}
             onStartDemo={handleStartDemo}
             onNavigateToSignup={() => navigateTo('signup')}
             isDemoLoading={isDemoLoading}
@@ -117,15 +174,23 @@ function MainApp() {
 
         {activeView === 'studio' && (
           <StudioPage
+            key={studioKey}
             initialJob={selectedJob}
-            onClearJob={() => setSelectedJob(null)}
+            onClearJob={() => {
+              handleSelectJob(null);
+              setStudioKey(prev => prev + 1);
+            }}
+            onJobChange={(job) => {
+              handleSelectJob(job);
+            }}
           />
         )}
 
         {activeView === 'projects' && (
           <ProjectsPage
             onSelectJob={(job) => {
-              setSelectedJob(job);
+              handleSelectJob(job);
+              setStudioKey(prev => prev + 1);
               navigateTo('studio');
             }}
             onNewProject={handleNewProject}
@@ -158,7 +223,7 @@ function MainApp() {
 
       {/* Global Application Footer */}
       <footer className="border-t border-[#E2E8F0] py-6 px-4 bg-white/80 mt-12">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#64748B]">
+        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#64748B]">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-[#0F172A] font-bold">ClipPilot AI Engine</span>

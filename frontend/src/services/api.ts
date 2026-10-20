@@ -4,10 +4,16 @@ import {
   EditPlan,
   EditReceipt,
   User,
-  AuthResponse
+  AuthResponse,
+  IntegrityVerificationResponse,
+  InstructionOutcome,
+  UndoRedoResponse,
+  HistoryStackResponse,
+  TimelineMapRequest,
+  TimelineMapResponse
 } from '../types';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://127.0.0.1:8000/api' : '/api');
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
 let currentToken: string | null = localStorage.getItem('clippilot_token');
 
@@ -157,6 +163,31 @@ export const api = {
     return res.json();
   },
 
+  async processInstruction(
+    jobId: string,
+    instruction: string,
+    parameters?: Record<string, any>,
+    simulateFailure?: boolean,
+    timeReference?: string
+  ): Promise<InstructionOutcome> {
+    const res = await fetch(`${API_BASE}/jobs/${jobId}/instruction`, {
+      method: 'POST',
+      headers: getHeaders({ 'Content-Type': 'application/json' }),
+      credentials: 'include',
+      body: JSON.stringify({
+        instruction,
+        parameters,
+        simulate_failure: simulateFailure ?? false,
+        time_reference: timeReference,
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Failed to process instruction' }));
+      throw new Error(err.detail || 'Failed to process instruction');
+    }
+    return res.json();
+  },
+
   async processJob(jobId: string, approvedPlan: EditPlan): Promise<JobResponse> {
     const res = await fetch(`${API_BASE}/jobs/${jobId}/process`, {
       method: 'POST',
@@ -208,6 +239,86 @@ export const api = {
     return res.json();
   },
 
+  async verifyIntegrity(jobId: string): Promise<IntegrityVerificationResponse> {
+    const res = await fetch(`${API_BASE}/jobs/${jobId}/verify-integrity`, {
+      headers: getHeaders(),
+      credentials: 'include',
+    });
+    if (!res.ok) throw new Error('Failed to verify source media integrity');
+    return res.json();
+  },
+
+  async saveHistory(jobId: string, history: any[], currentPlan?: EditPlan): Promise<JobResponse> {
+    const res = await fetch(`${API_BASE}/jobs/${jobId}/history`, {
+      method: 'POST',
+      headers: getHeaders(),
+      credentials: 'include',
+      body: JSON.stringify({ history, current_plan: currentPlan }),
+    });
+    if (!res.ok) throw new Error('Failed to save project edit history');
+    return res.json();
+  },
+
+  async getTimeline(jobId: string): Promise<any> {
+    const res = await fetch(`${API_BASE}/jobs/${jobId}/timeline`, {
+      headers: getHeaders(),
+      credentials: 'include',
+    });
+    if (!res.ok) throw new Error('Failed to retrieve timeline data');
+    return res.json();
+  },
+
+  async addTimelineEffect(
+    jobId: string,
+    payload: {
+      type: string;
+      source_start: number;
+      source_end: number;
+      parameters?: Record<string, any>;
+      label?: string;
+    }
+  ): Promise<any> {
+    const res = await fetch(`${API_BASE}/jobs/${jobId}/timeline/effects`, {
+      method: 'POST',
+      headers: getHeaders({ 'Content-Type': 'application/json' }),
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('Failed to add content-aware effect to timeline');
+    return res.json();
+  },
+
+  async transformTimeline(
+    jobId: string,
+    payload: {
+      action: string;
+      [key: string]: any;
+    }
+  ): Promise<any> {
+    const res = await fetch(`${API_BASE}/jobs/${jobId}/timeline/transform`, {
+      method: 'POST',
+      headers: getHeaders({ 'Content-Type': 'application/json' }),
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('Failed to apply timeline transformation');
+    return res.json();
+  },
+
+  async mapTimelineCoordinates(
+    jobId: string,
+    payload: TimelineMapRequest
+  ): Promise<TimelineMapResponse> {
+    const res = await fetch(`${API_BASE}/jobs/${jobId}/timeline/map`, {
+      method: 'POST',
+      headers: getHeaders({ 'Content-Type': 'application/json' }),
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('Failed to map timeline coordinates');
+    return res.json();
+  },
+
   getOriginalPreviewUrl(jobId: string): string {
     return `${API_BASE}/jobs/${jobId}/preview/original`;
   },
@@ -216,7 +327,62 @@ export const api = {
     return `${API_BASE}/jobs/${jobId}/preview/output?t=${Date.now()}`;
   },
 
-  getDownloadUrl(jobId: string): string {
-    return `${API_BASE}/jobs/${jobId}/download`;
+  getDownloadUrl(jobId: string, filename: string = 'ClipPilot_Edited_Video.mp4'): string {
+    const token = getStoredAuthToken();
+    const params = new URLSearchParams();
+    if (filename) params.set('filename', filename);
+    if (token) params.set('token', token);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return `${API_BASE}/jobs/${jobId}/download${query}`;
+  },
+
+  downloadVideo(jobId: string, customFilename?: string): void {
+    const finalName = customFilename
+      ? (customFilename.toLowerCase().endsWith('.mp4') ? customFilename : `${customFilename}.mp4`)
+      : 'ClipPilot_Edited_Video.mp4';
+    const downloadUrl = this.getDownloadUrl(jobId, finalName);
+
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.href = downloadUrl;
+    downloadAnchor.setAttribute('download', finalName);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  },
+
+  async undo(jobId: string): Promise<UndoRedoResponse> {
+    const res = await fetch(`${API_BASE}/jobs/${jobId}/undo`, {
+      method: 'POST',
+      headers: getHeaders({ 'Content-Type': 'application/json' }),
+      credentials: 'include',
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Failed to undo edit' }));
+      throw new Error(err.detail || 'Failed to undo edit');
+    }
+    return res.json();
+  },
+
+  async redo(jobId: string): Promise<UndoRedoResponse> {
+    const res = await fetch(`${API_BASE}/jobs/${jobId}/redo`, {
+      method: 'POST',
+      headers: getHeaders({ 'Content-Type': 'application/json' }),
+      credentials: 'include',
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Failed to redo edit' }));
+      throw new Error(err.detail || 'Failed to redo edit');
+    }
+    return res.json();
+  },
+
+  async getHistory(jobId: string): Promise<HistoryStackResponse> {
+    const res = await fetch(`${API_BASE}/jobs/${jobId}/history`, {
+      headers: getHeaders(),
+      credentials: 'include',
+    });
+    if (!res.ok) throw new Error('Failed to fetch history stack');
+    return res.json();
   },
 };
+

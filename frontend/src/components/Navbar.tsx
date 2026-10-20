@@ -65,7 +65,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[#E6E2F0] bg-white/95 backdrop-blur-md shadow-xs">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-10 h-16 flex items-center justify-between">
         {/* Brand Logo (from blueprint) */}
         <div
           className="flex items-center gap-3 cursor-pointer group select-none"
@@ -259,6 +259,17 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
 
           <div className="flex flex-col gap-1">
+            <button
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                onNewProject();
+              }}
+              className="w-full text-left px-3 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2.5 text-indigo-700 bg-indigo-50/80 hover:bg-indigo-100 transition-colors"
+            >
+              <Plus className="w-4 h-4 text-indigo-600" />
+              <span>New Video</span>
+            </button>
+
             <button
               onClick={() => {
                 setIsMobileMenuOpen(false);

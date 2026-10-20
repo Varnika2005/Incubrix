@@ -4,11 +4,30 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 24px;
+  align-items: start;
 }
 
 @media (min-width: 1024px) {
   .studio-grid {
-    grid-template-columns: 7fr 5fr;
+    grid-template-columns: minmax(0, 7fr) minmax(380px, 5fr);
+    gap: 28px;
+    align-items: start;
+  }
+}
+
+@media (min-width: 1440px) {
+  .studio-grid {
+    grid-template-columns: minmax(0, 13fr) minmax(440px, 9fr);
+    gap: 32px;
+    align-items: start;
+  }
+}
+
+@media (min-width: 1800px) {
+  .studio-grid {
+    grid-template-columns: minmax(0, 15fr) minmax(480px, 9fr);
+    gap: 36px;
+    align-items: start;
   }
 }
 

@@ -29,6 +29,7 @@ def generate_sample_videos():
             "-af", "volume=enable='between(t,3,6)':volume=0",
             "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "ultrafast",
             "-c:a", "aac", "-b:a", "128k",
+            "-brand", "mp42", "-movflags", "+faststart",
             str(s1_path)
         ]
         res = subprocess.run(cmd_s1, capture_output=True, text=True)
@@ -49,6 +50,7 @@ def generate_sample_videos():
             "-f", "lavfi", "-i", "sine=frequency=880:duration=15",
             "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "ultrafast",
             "-c:a", "aac",
+            "-brand", "mp42", "-movflags", "+faststart",
             str(s2_path)
         ]
         res = subprocess.run(cmd_s2, capture_output=True, text=True)
@@ -68,6 +70,7 @@ def generate_sample_videos():
             "-f", "lavfi", "-i", "color=c=navy:size=1080x1080:rate=30:duration=6",
             "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "ultrafast",
             "-an",
+            "-brand", "mp42", "-movflags", "+faststart",
             str(s3_path)
         ]
         res = subprocess.run(cmd_s3, capture_output=True, text=True)

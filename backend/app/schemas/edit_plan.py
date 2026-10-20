@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Optional, Literal, Tuple
+from typing import List, Optional, Literal, Tuple, Any
 from pydantic import BaseModel, Field
 
 class OperationType(str, Enum):
@@ -14,6 +14,15 @@ class OperationType(str, Enum):
     SILENCE_REMOVAL = "silence_removal"
     SUBTITLES = "subtitles"
     EXPORT_FORMAT = "export_format"
+    # Content-Aware Timeline Operations
+    CUT = "cut"
+    SPEED = "speed"
+    REORDER = "reorder"
+    CAPTION = "caption"
+    MUTE_RANGE = "mute_range"
+    BEEP = "beep"
+    VISUAL_EFFECT = "visual_effect"
+    TIMELINE = "timeline"
 
 class BaseOperation(BaseModel):
     type: OperationType
@@ -86,3 +95,10 @@ class EditPlan(BaseModel):
     suggested_repair: Optional[str] = None
     estimated_duration: Optional[float] = None
     estimated_dimensions: Optional[Tuple[int, int]] = None
+    timeline: Optional[dict] = Field(default=None, description="Content-aware timeline model state")
+    timeline_hash: Optional[str] = Field(default=None, description="Deterministic canonical SHA-256 hash of the timeline")
+    instruction_outcomes: List[dict] = Field(default_factory=list, description="Strict 3-way outcomes (APPLIED, NEEDS_CLARIFICATION, REJECTED) for each instruction")
+
+    def model_post_init(self, __context: Any) -> None:
+        if not self.timeline_hash and self.timeline and isinstance(self.timeline, dict):
+            self.timeline_hash = self.timeline.get("timeline_hash")

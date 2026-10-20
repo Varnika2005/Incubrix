@@ -358,19 +358,118 @@ d:/MUKI PROJECT/inbix/
 │   ├── sample_1_talking_head.mp4
 │   ├── sample_2_landscape_clip.mp4
 │   └── sample_3_silent_clip.mp4
-├── scripts/
-│   ├── generate_sample_videos.py
-│   ├── verify_e2e.py                   # 11-stage live acceptance test suite
-│   └── run_dev.bat
-├── storage/
-│   ├── uploads/
-│   ├── outputs/
-│   └── clippilot.db                    # SQLite store with users & jobs tables
-├── PROJECT_PLAN.md
-├── REQUIREMENTS.md
-├── IMPLEMENTATION_STATUS.md
-├── TEST_REPORT.md
-├── README.md
-├── .env.example
-└── .gitignore
+---
+
+## 8. IncuBrix Integration Standard Compliance
+
+ClipPilot AI strictly adheres to all 10 IncuBrix Container Integration Standards:
+
+### 1. One-Command Startup and Testing
+- **Docker Compose:** Start the complete environment including MinIO object storage with:
+  ```bash
+  docker compose up --build
+  ```
+- **Unified Test Command:** Run all unit, integration, and E2E tests in a single command without API keys:
+  ```bash
+  python scripts/run_all_tests.py
+  # or
+  pytest
+  ```
+- **Environment Template:** Complete settings documented in `.env.example` with safe local defaults.
+
+### 2. Documented HTTP API
+- All endpoints are exposed under `/api/v1/` with full backward-compatibility maintained under `/api/`.
+- Full OpenAPI 3.1.0 specification generated and accessible at:
+  - File: `openapi.yaml` in repo root
+  - HTTP Endpoint: `GET /api/v1/openapi.yaml` and `GET /openapi.yaml`
+
+### 3. Background Jobs & HMAC-SHA256 Callbacks
+- Long-running media jobs process asynchronously in background workers.
+- Returns HTTP `202 Accepted` with `job_id` when accepted (`POST /api/v1/jobs/{job_id}/process`).
+- Polling via `GET /api/v1/jobs/{job_id}` returns standard IncuBrix statuses:
+  - `queued`: Waiting in queue
+  - `running`: Transcoding / editing in progress
+  - `succeeded`: Completed successfully with download links
+  - `failed`: Terminated with error explanation
+- Optional webhook notification: Pass `callback_url` when submitting. Upon job completion, ClipPilot AI dispatches an HTTP POST signed with HMAC-SHA256 in the `X-IncuBrix-Signature` header (`sha256=<hex_digest>`).
+
+### 4. Safe Retries and Idempotency
+- Send `Idempotency-Key: <unique-token>` on any mutating POST endpoint.
+- Durable SQLite tracking in `idempotency_records` table.
+- Identical retries return cached response immediately (`X-Idempotent-Replay: true`).
+- Conflicting payloads with identical key are safely rejected with `HTTP 409 Conflict` and `IDEMPOTENCY_CONFLICT`.
+
+### 5. Consistent JSON Error Format & Error Codes
+Every client and server error strictly adheres to the standard schema:
+```json
+{
+  "error": {
+    "code": "UPPER_SNAKE_CASE",
+    "message": "Readable explanation with all internal paths stripped.",
+    "retryable": false,
+    "details": {}
+  }
+}
 ```
+
+#### Documented Error Codes
+| Error Code | HTTP Status | Retryable | Description |
+|:---|:---:|:---:|:---|
+| `BAD_REQUEST` | 400 | False | Malformed request or invalid parameters |
+| `UNAUTHORIZED` | 401 | False | Missing or invalid authentication token |
+| `FORBIDDEN` | 403 | False | Access denied to requested project or resource |
+| `NOT_FOUND` | 404 | False | Requested resource, job, or endpoint not found |
+| `METHOD_NOT_ALLOWED` | 405 | False | HTTP verb not supported on route |
+| `CONFLICT` | 409 | False | State conflict (e.g., duplicate user email) |
+| `IDEMPOTENCY_CONFLICT` | 409 | False | Reused Idempotency-Key with different payload |
+| `PAYLOAD_TOO_LARGE` | 413 | False | Uploaded file or URL stream exceeds size limit |
+| `UNSUPPORTED_MEDIA_TYPE` | 415 | False | Unsupported media format or container |
+| `VALIDATION_ERROR` | 422 | False | Schema validation failure on request body |
+| `SSRF_BLOCKED` | 400 | False | Target URL resolves to private, loopback, or cloud metadata IP |
+| `UNSUPPORTED_URL_SCHEME`| 400 | False | Non-HTTP/HTTPS protocol attempted in URL ingestion |
+| `RATE_LIMITED` | 429 | True | Exceeded rate limit thresholds |
+| `INTERNAL_SERVER_ERROR` | 500 | False | Unexpected internal server error (sanitized) |
+| `SERVICE_UNAVAILABLE` | 503 | True | Server or dependency unhealthy |
+
+### 6. Environment-Based Configuration
+All settings reside in `app.core.config.Settings` and `.env.example`:
+- `S3_ENDPOINT_URL`, `S3_BUCKET_NAME`, `ENABLE_S3_STORAGE`
+- `CALLBACK_SECRET`, `SECRET_KEY`, `JWT_ALGORITHM`
+- `MAX_UPLOAD_SIZE_MB`, `MAX_URL_DOWNLOAD_SIZE_MB`, `MAX_DURATION_SECONDS`
+- `LOG_LEVEL`, `LOG_FORMAT`, `CORS_ORIGINS`
+
+### 7. File Input and Output Storage
+- Input via direct file upload (`POST /api/v1/jobs/upload`) or validated URL (`POST /api/v1/jobs/url`).
+- SSRF Prevention: DNS resolution blocks RFC 1918 private subnets (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`), loopback (`127.0.0.0/8`), link-local / AWS metadata (`169.254.169.254`), and redirects are validated per-hop.
+- MinIO S3 object storage automatically configured via Docker Compose.
+- Stable download links returned via `/api/v1/jobs/{job_id}/download` and direct S3 URLs.
+
+### 8. Structured Logs & Health Probes
+- `GET /health` and `GET /api/v1/health`: Liveness probe (HTTP 200).
+- `GET /ready` and `GET /api/v1/ready`: Readiness probe verifying SQLite database, storage directory write permissions, and FFmpeg binary.
+- Structured JSON logs emitted with `timestamp`, `level`, `message`, `correlation_id`, and `job_id`.
+- Request tracking using `X-Correlation-ID` header.
+
+### 9. Output Manifest
+Completed jobs generate a standardized JSON manifest downloadable at `GET /api/v1/jobs/{job_id}/manifest` containing:
+- `job_id`: Unique identifier
+- `input` / `output`: Hashes (SHA-256), size in bytes, format, resolution, fps, codecs
+- `models_and_engines`: Engine names, providers, versions
+- `effective_settings`: Encoding preset, crf, codecs, operations applied
+- `random_seed`: `not_applicable` (deterministic engine)
+- `timestamps`: `started_at`, `completed_at`
+- `duration_timings`: Total and processing seconds
+- `estimated_cost`: Zero compute charges for local engine
+- `licence_and_rights`: Licensing rights and content ownership
+
+### 10. CLI Batch Runner
+Run automated batch processing across files or folders:
+```bash
+# Process a single file
+python scripts/batch_runner.py --input sample_assets/sample_1_talking_head.mp4 --output-dir batch_results
+
+# Process an entire folder of test media
+python scripts/batch_runner.py --input sample_assets/ --output-dir batch_results --api-url http://127.0.0.1:8000
+```
+- Automatically submits jobs, monitors progress, and downloads output video, manifest, and receipt into the results folder.
+- Exits with return code `0` on complete success, or non-zero on any failure.

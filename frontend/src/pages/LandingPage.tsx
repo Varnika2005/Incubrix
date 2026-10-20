@@ -34,7 +34,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   const { isAuthenticated, user } = useAuth();
 
   return (
-    <div className="flex flex-col gap-20 sm:gap-28 py-8 sm:py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
+    <div className="flex flex-col gap-20 sm:gap-28 py-8 sm:py-12 px-4 sm:px-6 lg:px-10 max-w-[1920px] mx-auto w-full">
       {/* 1. Palette Dots Indicator (from user blueprint) */}
       <div className="flex items-center gap-2 text-xs font-medium text-[#66627B] select-none">
         <div className="flex items-center gap-1.5">

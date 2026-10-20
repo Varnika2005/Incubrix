@@ -1,6 +1,20 @@
 version: '3.8'
 
 services:
+  minio:
+    image: minio/minio:latest
+    container_name: clippilot_minio
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+
   clippilot:
     build:
       context: .
@@ -10,13 +24,34 @@ services:
     restart: always
     ports:
       - "8000:8000"
+    depends_on:
+      - minio
     environment:
       - PORT=8000
+      - HOST=0.0.0.0
+      - ENVIRONMENT=production
+      - API_V1_PREFIX=/api/v1
       - CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:8000,http://127.0.0.1:8000
       - SECRET_KEY=clippilot_production_docker_compose_secret_key_2026_xyz
+      - CALLBACK_SECRET=clippilot_secure_callback_hmac_secret_key_2026
+      # S3 / MinIO Object Storage
+      - ENABLE_S3_STORAGE=true
+      - S3_ENDPOINT_URL=http://minio:9000
+      - S3_BUCKET_NAME=clippilot
+      - AWS_ACCESS_KEY_ID=minioadmin
+      - AWS_SECRET_ACCESS_KEY=minioadmin
+      - S3_REGION=us-east-1
+      # Local Storage & Database
+      - DATABASE_URL=sqlite:///storage/clippilot.db
+      - MAX_UPLOAD_SIZE_MB=250
+      - MAX_URL_DOWNLOAD_SIZE_MB=250
+      - MAX_DURATION_SECONDS=600
+      - LOG_LEVEL=INFO
+      - LOG_FORMAT=json
     volumes:
       # Persist SQLite database and processed media outputs
       - clippilot_storage:/app/storage
 
 volumes:
   clippilot_storage:
+  minio_data:

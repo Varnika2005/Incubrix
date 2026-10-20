@@ -55,6 +55,9 @@ def test_1_click_demo_lifecycle(client):
     # 5. Download Endpoint
     dl_res = client.get(f"/api/jobs/{job_id}/download")
     assert dl_res.status_code == 200
+    assert "video/mp4" in dl_res.headers.get("content-type", "")
+    assert "attachment" in dl_res.headers.get("content-disposition", "")
+    assert ".mp4" in dl_res.headers.get("content-disposition", "")
 
     # 6. Edit Receipt
     rcpt_res = client.get(f"/api/jobs/{job_id}/receipt")
@@ -70,3 +73,51 @@ def test_upload_invalid_extension(client):
     )
     assert res.status_code == 400
     assert "Unsupported format" in res.json()["detail"]
+
+def test_download_with_query_token(client):
+    # Create authenticated user
+    signup_res = client.post("/api/auth/signup", json={
+        "full_name": "Download Tester",
+        "email": f"dl_tester_{int(time.time())}@example.com",
+        "password": "Password123!",
+        "confirm_password": "Password123!"
+    })
+    assert signup_res.status_code == 201
+    token = signup_res.json()["access_token"]
+
+    # Demo job is accessible with token in query param
+    demo_res = client.post("/api/jobs/demo")
+    assert demo_res.status_code == 200
+    job_id = demo_res.json()["id"]
+
+    # Query param token download
+    dl_res = client.get(f"/api/jobs/{job_id}/download?token={token}")
+    # Might be 404 if not yet processed, but auth should succeed (not 401/403)
+    assert dl_res.status_code in (200, 404)
+
+def test_download_headers_and_filename(client):
+    demo_res = client.post("/api/jobs/demo")
+    assert demo_res.status_code == 200
+    job_id = demo_res.json()["id"]
+
+    from app.database.session import SessionLocal
+    from app.database.models import JobModel
+    db = SessionLocal()
+    job = db.query(JobModel).filter(JobModel.id == job_id).first()
+    job.output_path = job.input_path
+    db.commit()
+    db.close()
+
+    # Default download filename
+    dl_res = client.get(f"/api/jobs/{job_id}/download")
+    assert dl_res.status_code == 200
+    assert dl_res.headers["content-type"] == "video/mp4"
+    assert 'filename="ClipPilot_Edited_Video.mp4"' in dl_res.headers["content-disposition"]
+    assert dl_res.headers["accept-ranges"] == "bytes"
+
+    # Explicit custom filename
+    dl_res2 = client.get(f"/api/jobs/{job_id}/download?filename=Custom_Export.mp4")
+    assert dl_res2.status_code == 200
+    assert 'filename="Custom_Export.mp4"' in dl_res2.headers["content-disposition"]
+
+
